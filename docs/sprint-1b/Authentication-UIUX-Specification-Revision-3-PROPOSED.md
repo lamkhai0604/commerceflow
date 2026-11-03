@@ -131,15 +131,15 @@ Code
 +--------------------------------------------------+
 4.1 Component Details Table
 Component Pattern	Recommended Placement	Visibility & Trigger	Dismissal Behavior	Accessibility Specifications	Usage Context in CommerceFlow
-LoadingButton	Bottom of active form; primary action spot	Visible during all form submissions	Reverts to default state upon HTTP resolution	aria-busy="true" when active; disabled attribute set; minimum height 
+LoadingButton	Bottom of active form; primary action spot	Visible during all form submissions	Reverts to default state upon HTTP resolution	aria-busy="true" when active; disabled attribute set; recommended minimum height 44 CSS pixels
 Submit buttons for Login, Register, Logout
-StatusAlert	Top of modal dialog or top of view container	Rendered upon server error, validation failure, or conflict	Persistent until corrected or manually dismissed via [X]	role="alert" (aria-live="assertive") for error; role="status" for info/success; contrast 
+StatusAlert	Top of modal dialog or top of view container	Rendered upon server error, validation failure, or conflict	Persistent until corrected or manually dismissed via [X]	role="alert" (aria-live="assertive") for error; role="status" for info/success; contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
 Invalid credentials, duplicate email, CSRF warnings
 Toast / Snackbar	Bottom-right viewport (desktop); bottom-center (mobile)	Rendered upon successful non-disruptive operations	Auto-dismisses after 4000ms; close button available	role="status", aria-live="polite"; dismissible via Escape key	Successful login toast, logout confirmation
-SkeletonLoader	Within content zone (navbar account, product grids)	Rendered during initial asynchronous data fetching	Replaced by concrete UI upon receipt of data	Pulse animation contrast 
+SkeletonLoader	Within content zone (navbar account, product grids)	Rendered during initial asynchronous data fetching	Replaced by concrete UI upon receipt of data	Pulse animation contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
 ; hidden from assistive tech via aria-hidden="true"	Session verification on mount (/auth/me)
 SessionExpiredDialog	Centered modal overlay	Triggered by 401 UNAUTHENTICATED on protected action	Dismissed on clicking "Log In" or modal close	role="dialog", aria-modal="true"; focus trapped inside dialog	Active user session timeout during checkout/orders
-RetryState	Within form or inline error container	Displayed when network fails or CSRF token expires	Replaced when user clicks retry and operation begins	Retry button has clear label; keyboard accessible; contrast 
+RetryState	Within form or inline error container	Displayed when network fails or CSRF token expires	Replaced when user clicks retry and operation begins	Retry button has clear label; keyboard accessible; contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
 Network connection failure, expired CSRF retry
 5. Sprint 1B Authentication Application & Interaction Matrix
 5.1 Registration UX (RegisterModal)
@@ -155,7 +155,7 @@ Loading: Submit button transitions to LoadingButton displaying a spinner and "Lo
 Success: Closes modal, refreshes authenticated state in navbar, displays brief toast: "You have successfully logged in." Triggers background CSRF refresh (GET /api/v1/auth/csrf).
 Error:
 Bad credentials (INVALID_CREDENTIALS): Top StatusAlert (error): "Invalid email or password." (Safe generic message).
-CSRF failure (FORBIDDEN on login): Top StatusAlert (warning): "Security validation expired. Refreshing token..." Client refreshes token and prompts user to retry.
+CSRF failure (403 CSRF_INVALID on login): Top StatusAlert (warning): "Security validation expired. Refreshing token..." Client refreshes token and prompts user to retry.
 5.3 Logout UX
 Loading: User dropdown menu displays spinner and label "Logging out...". Menu clicks disabled.
 Success: Receives 204 No Content. Client resets Redux user state, discards stored CSRF token, fetches fresh anonymous CSRF token, and displays toast: "You have successfully logged out."
@@ -172,7 +172,7 @@ Registration (/auth/register)	Form fields blank; Submit enabled	Submit button sh
 Login (/auth/login)	Form active; pre-filled email if redirected	Submit button shows spinner + "Logging in..."; inputs disabled	200 OK: Sets session; rotates CSRF; closes modal; shows success toast	401 INVALID_CREDENTIALS: Alert banner: "Invalid email or password."	Re-enter credentials; password field focused
 Logout (/auth/logout)	"Log Out" menu item available	"Logging out..." indicator in menu; menu clicks blocked	204 No Content: Session purged; navbar updates to anonymous; toast shown	Network failure: Alert banner: "Unable to confirm logout."	User retry button provided; session state guarded
 Protected Action on Expired Session	User triggers cart or order action	Action indicator spins	N/A (Session expired)	401 UNAUTHENTICATED: SessionExpiredDialog launches	Informs user draft data is saved; launches LoginModal
-CSRF Stale (403 FORBIDDEN on write)	User submits form	Spinner active	N/A (Rejected)	403 FORBIDDEN: Alert banner: "Security token expired."	Client refreshes token (/auth/csrf); user clicks submit
+CSRF Stale (403 CSRF_INVALID on write)	User submits form	Spinner active	N/A (Rejected)	403 CSRF_INVALID: Alert banner: "Security token expired."	Client refreshes token (/auth/csrf); user clicks submit
 6. Revised Form Specifications & Field Validation
 6.1 Customer Registration Form (RegisterModal)
 Conforms strictly to backend RegisterRequest record:
@@ -193,7 +193,7 @@ Code
 |                                                                       |
 |  Full Name *                                                          |
 |  [ Jane Doe                                                         ] |
-|  Helper: Enter your full name (1–150 characters)                      |
+|  Helper: Enter your full name (1–50 Unicode code points)                      |
 |                                                                       |
 |  Email Address *                                                      |
 |  [ jane.doe@example.com                                             ] |
@@ -215,14 +215,14 @@ Detailed Field Rules
 Field Name	Target DTO Field	Input Attributes	Validation Criteria	User Error Copy (aria-describedby)
 Full Name	fullName	type="text"
 autocomplete="name"	- Required
-- Trimmed length: 1–150 characters
+- Trimmed length: 1–50 Unicode code points
 - Any valid non-empty string	- "Full name is required."
-- "Full name cannot exceed 150 characters."
+- "Full name cannot exceed 50 Unicode code points."
 Email Address	email	type="email"
 autocomplete="email"	- Required
-- Standard email pattern (RFC @ compatible; max 320 chars)	- "Email address is required."
+- Normalize whitespace/lowercase before validation; valid email, max 254 Unicode code points	- "Email address is required."
 - "Please enter a valid email address."
-- "Email cannot exceed 320 characters."
+- "Email cannot exceed 254 Unicode code points."
 Password	password	type="password"
 autocomplete="new-password"	- Required
 - Length: 12 to 128 characters (@CodePointLength(min=12, max=128))	- "Password is required."
@@ -315,11 +315,11 @@ HTTP Status	Backend code	Backend detail	UI Feedback Pattern	Displayed User-Facin
 400 Bad Request	INVALID_REQUEST	"Request body is invalid"	StatusAlert (error)	"The submitted request is invalid. Please refresh the page and try again."	Re-initialize form
 401 Unauthorized	INVALID_CREDENTIALS	"Invalid email or password"	StatusAlert (error)	"Invalid email or password. Please try again." (Generic safe message)	Re-enter password; focus password field
 401 Unauthorized	UNAUTHENTICATED	"Authentication required"	SessionExpiredDialog	"Your session has timed out. Please log in to continue."	Launch LoginModal; preserve non-sensitive draft input
-403 Forbidden	FORBIDDEN	"Permission denied or CSRF token invalid"	Context-dependent StatusAlert	Auth forms: "Security validation expired. Refreshing token..."
-Protected views: "Access Denied: You do not have permission."	Auth forms: Refresh CSRF (GET /auth/csrf) and prompt user retry.
-Protected views: Navigate home
+403 Forbidden	CSRF_INVALID	"CSRF validation failed"	StatusAlert (warning)	"Security validation expired. Refreshing token..."	Fetch GET /api/v1/auth/csrf; prompt user-initiated retry (no automatic replay)
+403 Forbidden	ACCESS_DENIED	"Access denied"	StatusAlert (error)	"You do not have permission to perform this action."	Do not refresh CSRF automatically; offer safe navigation
+403 Forbidden	FORBIDDEN (legacy/unknown)	"Unspecified denial"	StatusAlert (error)	"Unable to complete this request."	Safe generic handling; do not classify as CSRF based on route or message
 409 Conflict	EMAIL_CONFLICT	"An account with this email already exists"	StatusAlert (error) + Inline error	"An account with this email already exists. Please log in instead."	Switch to LoginModal with pre-filled email
-500 Internal Error	None / Generic	Internal server error	StatusAlert (error)	"A server error occurred. Please try again in a few moments."	User retry button
+500 Internal Error	INTERNAL_ERROR	Internal server error	StatusAlert (error)	"A server error occurred. Please try again in a few moments."	User retry button
 10. Design-to-API Mapping
 User Operation	Method & Endpoint	Headers	Request Body	Success Outcome	Error Codes Handled
 CSRF Bootstrap	GET /api/v1/auth/csrf	Accept: application/json	None	200 OK
@@ -329,7 +329,7 @@ X-CSRF-TOKEN: <token>	RegisterRequest:
 { fullName, email, password }	201 Created
 UserProfile DTO	400 VALIDATION_ERROR
 400 INVALID_REQUEST
-403 FORBIDDEN
+403 CSRF_INVALID
 409 EMAIL_CONFLICT
 Customer Login	POST /api/v1/auth/login	Content-Type: application/json
 X-CSRF-TOKEN: <token>	LoginRequest:
@@ -337,22 +337,17 @@ X-CSRF-TOKEN: <token>	LoginRequest:
 UserProfile DTO
 Set-Cookie: SESSION=...	400 INVALID_REQUEST
 401 INVALID_CREDENTIALS
-403 FORBIDDEN
+403 CSRF_INVALID
 Active Session Check	GET /api/v1/auth/me	Accept: application/json	None (Browser transports SESSION)	200 OK
 UserProfile DTO	401 UNAUTHENTICATED
 Customer Logout	POST /api/v1/auth/logout	X-CSRF-TOKEN: <token>	None	204 No Content
 (Session purged)	401 UNAUTHENTICATED
-403 FORBIDDEN
+403 CSRF_INVALID
 11. Accessibility (WCAG 2.1 AA) Compliance Checklist
 
 Color Contrast Compliance:
-Normal Text (< 18pt / < 14pt bold): Contrast ratio 
- against background (WCAG 1.4.3). Example: #1F2937 on #FFFFFF gives 
-.
-Large Text (
- or 
- bold) & Interactive UI Borders: Contrast ratio 
- against background. Example: #4B5563 on #FFFFFF gives 
+Normal Text (< 18pt / < 14pt bold): Contrast ratio at least 4.5:1 against background (WCAG 2.1 SC 1.4.3). Example #1F2937 on #FFFFFF exceeds 4.5:1.
+Large Text (at least 18pt or 14pt bold): text contrast at least 3:1; interactive component boundaries and states at least 3:1 against adjacent colors (SC 1.4.11). Example #4B5563 on #FFFFFF exceeds 3:1.
 .
 Status Indicators: Never communicate status by color alone; all alerts combine color with distinct iconography and descriptive text labels.
 
@@ -375,10 +370,7 @@ Masked: aria-label="Show password" and aria-pressed="false".
 Revealed: aria-label="Hide password" and aria-pressed="true".
 
 Touch Target Dimensions:
-WCAG 2.1 AA Minimum: All interactive elements meet the minimum 
- dimension.
-Recommended Usability Standard: All primary form inputs and action buttons are sized to a minimum height of 
- to accommodate touch navigation comfortably.
+WCAG 2.1 AA does not prescribe a universal minimum target size; ensure keyboard accessibility and usable spacing. Recommended usability target: at least 44 × 44 CSS pixels for primary touch controls (recommendation, not a WCAG 2.1 AA requirement).
 12. Acceptance Criteria (UX-01 & Sprint 1B Auth)
 The implementation of Sprint 1B Authentication will satisfy design acceptance criteria when:
 Deterministic Loading Feedback:
@@ -396,9 +388,7 @@ Actionable Recovery:
 On expired sessions, the SessionExpiredDialog preserves non-sensitive draft form data and opens the login dialog.
 On CSRF rejection, the client refreshes the CSRF token and invites user-initiated resubmission without automatic blind replay.
 Accessibility Compliance:
-All interactive controls adhere to WCAG 2.1 AA contrast ratios (
- text, 
- UI components).
+All interactive controls adhere to WCAG 2.1 AA contrast ratios (4.5:1 normal text, 3:1 large text and relevant non-text UI components).
 Dynamic announcements use role="alert" for errors and role="status" for non-disruptive feedback.
 Focus is properly managed and trapped within modals, with full keyboard navigability.
 13. Scope and Restrictions
@@ -426,22 +416,19 @@ Assumed 403 always meant CSRF expiry	Disambiguated: 403 can be authorization OR 
 Problem Details Codes
 Included unsupported AUTH_INVALID_CREDENTIALS	Replaced with verified PR #10 codes: INVALID_CREDENTIALS, UNAUTHENTICATED, VALIDATION_ERROR, EMAIL_CONFLICT.	Correction D & PR #10 ApiErrors.java
 Registration Form Fields
-Suggested first/last split and strict RFC 5322 regex	Standardized: fullName (1–150 chars), email (standard @, max 320), password (12–128 chars). confirmPassword is client-only.	Correction E & PR #10 RegisterRequest.java
+Suggested first/last split and strict RFC 5322 regex	Standardized: fullName (1–50 Unicode code points), normalized email (max 254 Unicode code points), password (12–128 Unicode code points). confirmPassword is client-only.	Correction E & PR #10 RegisterRequest.java
 Accessibility Specs
-General statements without metrics	Restored full numeric contrast (
- text, 
- UI/focus), focus trapping, and 
- touch targets.	Correction F
+General statements without metrics	Defined numeric contrast (4.5:1 normal text, 3:1 large text and relevant UI), focus management, and recommended 44 × 44 CSS pixel touch targets.	Correction F
 User Action Status & Feedback
 Ad-hoc spinner mentions	UX-01 Integration: Comprehensive 4-state lifecycle (Loading, Success, Error, Recovery), reusable component patterns, and interaction matrix.	Tech Lead UX-01 Unified UX Requirement
 15. Remaining Integration Questions and Change Requests
 15.1 Integration Questions for Backend Team
 Discrete Problem Codes for 403 Failures:
-Current state in PR #10: SecurityConfiguration.accessDeniedHandler returns code: "FORBIDDEN" and detail: "Permission denied or CSRF token invalid" for both CSRF token rejection and role authorization denials.
-Design Request: Can the backend configure a dedicated CsrfAccessDeniedHandler returning code: "CSRF_INVALID"? This would allow the frontend to trigger a targeted CSRF refresh prompt rather than relying on route heuristics.
+Historical question (superseded by CR-04 implementation in PR #10): earlier revisions used a combined FORBIDDEN response. Current backend distinguishes CSRF_INVALID and ACCESS_DENIED; see the 2026-11-02 addendum.
+Resolved for backend PR #10: use CSRF_INVALID for CSRF rejection and ACCESS_DENIED for authorization. Frontend implementation remains on hold per CR-03.
 15.2 Status of Change Requests
 CR-01 (CSRF Route Standardization to /api/v1/auth/csrf): APPROVED & INTEGRATED.
-CR-02 (Removal of Forgotten Password Link): APPROVED & INTEGRATED.
+CR-02 (Removal of Forgotten Password Link): APPROVED DESIGN; frontend removal NOT IMPLEMENTED (CR-03 hold).
 CR-03 (Frontend Legacy Storage Migration): ON HOLD.
 Reminder: Legacy frontend src/redux/sagas/authSaga.tsx still stores localStorage.setItem('access_token', user.id). Revision 3 defines the target session-cookie architecture in Section 7, but per strict instructions, no frontend source code has been altered. Implementation of CR-03 remains pending Tech Lead authorization.
 
