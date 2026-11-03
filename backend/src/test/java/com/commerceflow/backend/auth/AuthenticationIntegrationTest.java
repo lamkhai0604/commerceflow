@@ -351,6 +351,40 @@ class AuthenticationIntegrationTest {
     }
 
     @Test
+    void registrationRejectsUnknownJsonFieldsWithoutCreatingAnAccount() throws Exception {
+        var browser = new Browser(); browser.bootstrap();
+        String email = email();
+        for (Object extra : new Object[]{"private-extra-value", true, Map.of("roles", "ADMIN")}) {
+            var body = new java.util.HashMap<String, Object>(registration(email));
+            body.put("unexpectedField", extra);
+            var response = browser.post("/api/v1/auth/register", body);
+            problem(response, 400, "INVALID_REQUEST");
+            assertThat(response.body()).doesNotContain("unexpectedField", "private-extra-value");
+            assertThat(users.existsByEmail(email)).isFalse();
+            problem(browser.get("/api/v1/auth/me"), 401, "UNAUTHENTICATED");
+        }
+        // The same otherwise-valid payload succeeds once the unknown property is removed.
+        assertThat(browser.post("/api/v1/auth/register", registration(email)).statusCode()).isEqualTo(201);
+    }
+
+    @Test
+    void loginRejectsUnknownJsonFieldsWithoutAuthenticatingValidCredentials() throws Exception {
+        String email = email(); var browser = registered(email);
+        String anonymousSession = browser.cookie();
+        for (Object extra : new Object[]{"private-extra-value", true, Map.of("roles", "ADMIN")}) {
+            var response = browser.post("/api/v1/auth/login", Map.of(
+                    "email", email, "password", PASSWORD, "unexpectedField", extra));
+            problem(response, 400, "INVALID_REQUEST");
+            assertThat(response.body()).doesNotContain("unexpectedField", "private-extra-value");
+            assertThat(browser.cookie()).isEqualTo(anonymousSession);
+            problem(browser.get("/api/v1/auth/me"), 401, "UNAUTHENTICATED");
+        }
+        login(browser, email);
+        assertThat(browser.cookie()).isNotEqualTo(anonymousSession);
+        assertThat(browser.get("/api/v1/auth/me").statusCode()).isEqualTo(200);
+    }
+
+    @Test
     void loginValidationAndProtocolErrorsHaveExactCodes() throws Exception {
         var browser = new Browser(); browser.bootstrap();
         for (Object body : new Object[]{Map.of(), Map.of("email", "invalid", "password", PASSWORD),
