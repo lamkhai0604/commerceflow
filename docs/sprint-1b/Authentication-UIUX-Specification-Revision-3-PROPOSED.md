@@ -1,3 +1,5 @@
+> **2026-11-02 contract-alignment addendum (documentation-only).** This Revision 3 proposal remains Draft and is not FINAL. Backend [PR #10](https://github.com/lamkhai0604/ecommerce-project/pull/10) and proposed OpenAPI [PR #13](https://github.com/lamkhai0604/ecommerce-project/pull/13) supersede earlier authentication error-code assumptions. The following addendum clarifies CR-04/CR-05 without authorizing Frontend work (CR-03 remains ON HOLD). Existing UI-01, UI-02 and UX-01 decisions are preserved.
+
 CommerceFlow — Sprint 1B Authentication UI/UX Specification, Revision 3 (Unified UX-01 Integration)
 Document Version: 3.1.0-PROPOSED-REVISION
 Author: Gemini (UI/UX Design Specialist)
@@ -436,9 +438,19 @@ Ad-hoc spinner mentions	UX-01 Integration: Comprehensive 4-state lifecycle (Load
 15.1 Integration Questions for Backend Team
 Discrete Problem Codes for 403 Failures:
 Current state in PR #10: SecurityConfiguration.accessDeniedHandler returns code: "FORBIDDEN" and detail: "Permission denied or CSRF token invalid" for both CSRF token rejection and role authorization denials.
-Design Request: Can the backend configure a dedicated CsrfAccessDeniedHandler returning code: "CSRF_TOKEN_INVALID"? This would allow the frontend to trigger a targeted CSRF refresh prompt rather than relying on route heuristics.
+Design Request: Can the backend configure a dedicated CsrfAccessDeniedHandler returning code: "CSRF_INVALID"? This would allow the frontend to trigger a targeted CSRF refresh prompt rather than relying on route heuristics.
 15.2 Status of Change Requests
 CR-01 (CSRF Route Standardization to /api/v1/auth/csrf): APPROVED & INTEGRATED.
 CR-02 (Removal of Forgotten Password Link): APPROVED & INTEGRATED.
 CR-03 (Frontend Legacy Storage Migration): ON HOLD.
 Reminder: Legacy frontend src/redux/sagas/authSaga.tsx still stores localStorage.setItem('access_token', user.id). Revision 3 defines the target session-cookie architecture in Section 7, but per strict instructions, no frontend source code has been altered. Implementation of CR-03 remains pending Tech Lead authorization.
+
+## 2026-11-02 — CR-04 / CR-05 UX contract-alignment addendum
+
+This addendum is a documentation proposal for Tech Lead review, not permission to merge, mark FINAL, or implement frontend integration.
+
+**Error mapping and recovery.** The backend's CSRF rejection code is `CSRF_INVALID` (HTTP 403), not the earlier `CSRF_TOKEN_INVALID`. A separate authorization denial is `ACCESS_DENIED` (HTTP 403). Missing/expired authentication is `UNAUTHENTICATED` (401); invalid credentials are `INVALID_CREDENTIALS` (401). Invalid login JSON/schema is 400 `INVALID_REQUEST` or `VALIDATION_ERROR`, not a credential failure. A verified duplicate registration email is 409 `EMAIL_CONFLICT`; unrelated database errors must not be displayed as duplicate-email errors. Use generic safe feedback for legacy `FORBIDDEN`, unknown codes, non-JSON bodies, and network errors; never infer CSRF from response text or automatically replay state-changing requests. After login rotates session/CSRF, bootstrap a new CSRF token before subsequent writes. Preserve UI-01 post-registration login modal, UI-02 passive session check and UX-01 loading/success/error feedback.
+
+**CR-05 client-side registration rules.** Require a nonblank `fullName` of 1–50 Unicode code points, a nonblank password of 12–128 Unicode code points (do not trim, normalize or truncate password), and a valid normalized email of at most 254 Unicode code points. Normalize email by stripping leading/trailing whitespace and applying `Locale.ROOT`-equivalent lowercase **before** email format and length validation and before sending the request. JSON Schema `format` and `maxLength` alone do not implement preprocessing. For login, apply normalized-email validation, but preserve the supplied non-null string password exactly and do not reapply registration password length constraints. Client counters must count Unicode code points, not UTF-16 units or bytes.
+
+**Scope and compatibility.** Existing React authentication still uses legacy client-side/localStorage behavior and an external `/users` API; it is not yet an adopted consumer of the new backend auth endpoints. Do not migrate it under this PR. CR-02 removes the inactive Forgotten Password link **when separately authorized frontend implementation occurs**; no link removal is claimed here. No production code, FINAL baseline, OpenAPI or Backend file is changed by this UX addendum. Real browser HTTPS/proxy/cookie/CSRF verification and consumer acceptance remain separate gates.
