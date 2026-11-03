@@ -651,7 +651,7 @@ components:
       type: apiKey
       in: cookie
       name: SESSION
-      description: Example cookie name; final Spring Session cookie configuration is pending.
+      description: Server-managed SESSION cookie; HttpOnly, SameSite=Lax, Path=/, Secure by default (production). Secure can be disabled only by explicit local configuration. Cookie behavior behind HTTPS/reverse proxy requires browser verification.
   parameters:
     CsrfToken:
       name: X-CSRF-TOKEN
@@ -897,7 +897,7 @@ components:
           type: string
           minLength: 12
           maxLength: 128
-          description: 12–128 Unicode code points; never trim, normalize or truncate.
+          description: Required nonblank password of 12–128 Unicode code points; never trim, normalize or truncate.
         fullName:
           type: string
           minLength: 1
