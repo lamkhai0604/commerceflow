@@ -24,7 +24,7 @@
 ## Session security
 - HttpOnly/Secure production session cookie, appropriate SameSite and expiration.
 - Rotate session ID on login, invalidate on logout.
-- GET /auth/csrf returns a token in JSON; X-CSRF-TOKEN required for state-changing endpoints, including login/logout.
+- GET /api/v1/auth/csrf returns a token in JSON; X-CSRF-TOKEN required for state-changing endpoints, including login/logout.
 - 401 unauthenticated; 403 insufficient permissions/CSRF; 404 for another customer's order.
 
 ## Quality gates
