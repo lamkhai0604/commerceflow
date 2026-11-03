@@ -136,8 +136,7 @@ Submit buttons for Login, Register, Logout
 StatusAlert	Top of modal dialog or top of view container	Rendered upon server error, validation failure, or conflict	Persistent until corrected or manually dismissed via [X]	role="alert" (aria-live="assertive") for error; role="status" for info/success; contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
 Invalid credentials, duplicate email, CSRF warnings
 Toast / Snackbar	Bottom-right viewport (desktop); bottom-center (mobile)	Rendered upon successful non-disruptive operations	Auto-dismisses after 4000ms; close button available	role="status", aria-live="polite"; dismissible via Escape key	Successful login toast, logout confirmation
-SkeletonLoader	Within content zone (navbar account, product grids)	Rendered during initial asynchronous data fetching	Replaced by concrete UI upon receipt of data	Pulse animation contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
-; hidden from assistive tech via aria-hidden="true"	Session verification on mount (/auth/me)
+SkeletonLoader	Within content zone (navbar account, product grids)	Rendered during initial asynchronous data fetching	Replaced by concrete UI upon receipt of data	Placeholder animation does not convey information by color alone; hidden from assistive tech via aria-hidden="true"	Session verification on mount (/auth/me)
 SessionExpiredDialog	Centered modal overlay	Triggered by 401 UNAUTHENTICATED on protected action	Dismissed on clicking "Log In" or modal close	role="dialog", aria-modal="true"; focus trapped inside dialog	Active user session timeout during checkout/orders
 RetryState	Within form or inline error container	Displayed when network fails or CSRF token expires	Replaced when user clicks retry and operation begins	Retry button has clear label; keyboard accessible; contrast at least 4.5:1 for normal text and 3:1 for relevant UI components
 Network connection failure, expired CSRF retry
@@ -348,7 +347,6 @@ Customer Logout	POST /api/v1/auth/logout	X-CSRF-TOKEN: <token>	None	204 No Conte
 Color Contrast Compliance:
 Normal Text (< 18pt / < 14pt bold): Contrast ratio at least 4.5:1 against background (WCAG 2.1 SC 1.4.3). Example #1F2937 on #FFFFFF exceeds 4.5:1.
 Large Text (at least 18pt or 14pt bold): text contrast at least 3:1; interactive component boundaries and states at least 3:1 against adjacent colors (SC 1.4.11). Example #4B5563 on #FFFFFF exceeds 3:1.
-.
 Status Indicators: Never communicate status by color alone; all alerts combine color with distinct iconography and descriptive text labels.
 
 Focus Management & Keyboard Navigation:
