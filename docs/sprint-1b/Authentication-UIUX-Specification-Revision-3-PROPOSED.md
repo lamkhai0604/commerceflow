@@ -200,7 +200,7 @@ Code
 |                                                                       |
 |  Password *                                                           |
 |  [ ************                                                 (eye)]|
-|  Helper: Must be between 12 and 128 characters                        |
+|  Helper: Must be between 12 and 128 Unicode code points                        |
 |                                                                       |
 |  Confirm Password *                                                   |
 |  [ ************                                                 (eye)]|
@@ -224,9 +224,9 @@ autocomplete="email"	- Required
 - "Email cannot exceed 254 Unicode code points."
 Password	password	type="password"
 autocomplete="new-password"	- Required
-- Length: 12 to 128 characters (@CodePointLength(min=12, max=128))	- "Password is required."
-- "Password must be at least 12 characters long."
-- "Password cannot exceed 128 characters."
+- Length: 12 to 128 Unicode code points (@CodePointLength(min=12, max=128)); do not trim or normalize password	- "Password is required."
+- "Password must contain at least 12 Unicode code points."
+- "Password cannot exceed 128 Unicode code points."
 Confirm Password	Client-only (Never sent to API)	type="password"
 autocomplete="new-password"	- Required
 - Must match password exactly	- "Please confirm your password."
@@ -376,7 +376,7 @@ Every asynchronous operation (register, login, logout, /auth/me) displays an imm
 Duplicate clicks during in-flight requests are physically prevented via input and button disabling.
 Clear Success Confirmation:
 Successful registration displays "Account created successfully. Please log in." and transitions to LoginModal per UI-01.
-Successful login updates the UI authenticated state only after receiving 200 OK and a valid SESSION cookie.
+Successful login updates UI authenticated state after a successful 200 response and server-confirmed profile; JavaScript cannot read or validate the HttpOnly SESSION cookie. Confirm session continuity via a subsequent GET /api/v1/auth/me where needed.
 Successful logout updates the UI to anonymous state only after receiving 204 No Content.
 Structured & Safe Error Feedback:
 Form validation errors appear inline under the specific offending fields using server-supplied errors map.
@@ -390,7 +390,7 @@ All interactive controls adhere to WCAG 2.1 AA contrast ratios (4.5:1 normal tex
 Dynamic announcements use role="alert" for errors and role="status" for non-disruptive feedback.
 Focus is properly managed and trapped within modals, with full keyboard navigability.
 13. Scope and Restrictions
-Current Implementation Scope: Sprint 1B Authentication UI/UX specification (RegisterModal, LoginModal, Logout, Session Bootstrap).
+Current Design Scope: Sprint 1B Authentication UI/UX specification (RegisterModal, LoginModal, Logout, Session Bootstrap). Frontend implementation is not authorized under CR-03.
 Future Applicability: The UX-01 User Action Status & Feedback standard applies across all upcoming CommerceFlow domains (Catalog, Cart, Checkout, Orders, Admin Dashboard).
 No Code Implementation Authorized: Design document revision only. Do not edit source code files (authSlice.ts, authSaga.tsx, LoginModal.tsx, etc.).
 CR-03 Status: ON HOLD. Legacy localStorage.setItem('access_token', ...) in authSaga.tsx is documented as technical/security debt, but no code changes are authorized until Tech Lead approval.
