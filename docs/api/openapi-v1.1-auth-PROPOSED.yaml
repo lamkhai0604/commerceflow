@@ -48,9 +48,7 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
-      description: 'CR-04/CR-05 proposal: no HTML/form-login redirect. Missing/null or invalid-schema login fields
-        are 400; valid incorrect credentials are 401. State-changing requests require X-CSRF-TOKEN; query/form tokens
-        do not substitute.'
+      description: 'Return the session-associated CSRF token and required header name. Authentication is not required. Send the token in X-CSRF-TOKEN on subsequent state-changing requests.'
   /auth/register:
     post:
       tags:
@@ -92,9 +90,7 @@ paths:
           $ref: '#/components/responses/MethodNotAllowed'
         '415':
           $ref: '#/components/responses/UnsupportedMediaType'
-      description: 'CR-04/CR-05 proposal: no HTML/form-login redirect. Missing/null or invalid-schema login fields
-        are 400; valid incorrect credentials are 401. State-changing requests require X-CSRF-TOKEN; query/form tokens
-        do not substitute.'
+      description: 'Create a CUSTOMER account without authenticating the caller. Requires a valid session-associated CSRF header. Normalize email before validation, apply registration constraints, and reject unknown JSON properties. Invalid requests return 400; verified duplicate email returns 409.'
   /auth/login:
     post:
       tags:
@@ -136,9 +132,7 @@ paths:
           $ref: '#/components/responses/UnsupportedMediaType'
         '400':
           $ref: '#/components/responses/BadRequest'
-      description: 'CR-04/CR-05 proposal: no HTML/form-login redirect. Missing/null or invalid-schema login fields
-        are 400; valid incorrect credentials are 401. State-changing requests require X-CSRF-TOKEN; query/form tokens
-        do not substitute.'
+      description: 'Authenticate valid credentials and establish a server-side session, rotating the session identifier and invalidating the previous CSRF token. Requires a valid CSRF header. Invalid request/schema returns 400; incorrect or unavailable-account credentials return generic 401. Bootstrap CSRF again before subsequent writes.'
   /auth/logout:
     post:
       tags:
@@ -165,9 +159,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
-      description: 'CR-04/CR-05 proposal: no HTML/form-login redirect. Missing/null or invalid-schema login fields
-        are 400; valid incorrect credentials are 401. State-changing requests require X-CSRF-TOKEN; query/form tokens
-        do not substitute.'
+      description: 'Invalidate the authenticated server-side session and expire its cookie. Requires authentication and a valid CSRF header. Success returns 204 without a body. CSRF rejection may precede anonymous-session rejection.'
   /auth/me:
     get:
       tags:
@@ -192,9 +184,7 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
-      description: 'CR-04/CR-05 proposal: no HTML/form-login redirect. Missing/null or invalid-schema login fields
-        are 400; valid incorrect credentials are 401. State-changing requests require X-CSRF-TOKEN; query/form tokens
-        do not substitute.'
+      description: 'Return the authenticated session principal profile and explicitly assigned roles. No CSRF header or particular role is required. Missing or expired authentication returns 401.'
   /account/profile:
     get:
       tags:
@@ -875,8 +865,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          description: Validate after strip() and Locale.ROOT lowercasing; maximum 254 Unicode code points. Existing
-            email-format policy is retained.
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
         fullName:
           type: string
           maxLength: 50
@@ -903,8 +892,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          description: Validate after strip() and Locale.ROOT lowercasing; maximum 254 Unicode code points. Existing
-            email-format policy is retained.
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
         password:
           type: string
           minLength: 12
@@ -927,8 +915,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          description: Validate after strip() and Locale.ROOT lowercasing; maximum 254 Unicode code points. Existing
-            email-format policy is retained.
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
         password:
           type: string
           description: Required non-null JSON string, preserved exactly. Registration creation-length policy is
