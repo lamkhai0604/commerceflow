@@ -1,5 +1,7 @@
 # CR-04 — Standardized Error Handling
 
+> **Historical design proposal — superseded for Sprint 1B authentication implementation (2026-11-02).** This file preserves the 2026-10-29 proposal and its original review snapshot; statements below saying CR-04 is unapproved/unimplemented are **historical**, not the current project status. The Tech Lead subsequently approved CR-04/CR-05 corrective scope. Backend implementation and tests are in [Draft PR #10](https://github.com/lamkhai0604/ecommerce-project/pull/10) (head `2e611e82`; hosted Java 21 CI: 49 tests passed). The proposed versioned contract and route-specific status mapping are in [Draft PR #13](https://github.com/lamkhai0604/ecommerce-project/pull/13), especially `docs/api/CR04-CR05-CONTRACT-REVIEW.md`. Neither Draft PR is merged or FINAL. Future commerce error codes in this historical proposal are **design reservations**, not implemented endpoints. For current authentication behavior, consult PR #10 and PR #13 rather than treating this proposal as authority.
+
 **Status: PROPOSAL — not approved, not FINAL, not implemented.**
 
 Task: CF-CR04-01. Owner: Backend Architecture. Review date: 2026-10-29.
