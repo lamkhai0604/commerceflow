@@ -16,7 +16,7 @@ This document represents the unified Revision 3 of the Sprint 1B Authentication 
 Authoritative Architecture Foundations
 Decision D3 (Security Architecture): Enforces Spring Security with Spring Session JDBC backing. User sessions rely strictly on server-managed, HttpOnly, SameSite=Lax, Path=/ cookies named SESSION. Browser storage (localStorage / sessionStorage) must never store authentication credentials or synthetic tokens.
 Reverse Proxy & Origin: Single-origin deployment where the React SPA and /api/v1/* endpoints share the same host through an approved reverse proxy. Credentialed cross-origin CORS is disabled.
-Draft PR #10 Verification: Confirms backend implementations for CSRF token rotation, PBKDF2 credential hashing, Spring Session persistence, RFC 7807 ProblemDetail structures, and strict RegisterRequest / LoginRequest records.
+Draft PR #10 Verification: Confirms backend implementations for CSRF token rotation, PBKDF2 credential hashing, Spring Session persistence, RFC 9457 Problem Details structures (Spring `ProblemDetail`), and strict RegisterRequest / LoginRequest records.
 2. Approved Architectural Decisions UI-01 and UI-02
 UI-01 — Post-Registration Flow (APPROVED)
 Backend Contract Reality: In AuthController.java (PR #10), POST /api/v1/auth/register creates the user account and returns 201 Created with the registered UserProfile. The backend does not authenticate the customer, does not invoke session authentication strategies, and does not emit an authenticated SESSION cookie.
@@ -214,12 +214,12 @@ Detailed Field Rules
 Field Name	Target DTO Field	Input Attributes	Validation Criteria	User Error Copy (aria-describedby)
 Full Name	fullName	type="text"
 autocomplete="name"	- Required
-- Trimmed length: 1–50 Unicode code points
+- Nonblank; 1–50 Unicode code points; do not silently trim, normalize or truncate fullName
 - Any valid non-empty string	- "Full name is required."
 - "Full name cannot exceed 50 Unicode code points."
 Email Address	email	type="email"
 autocomplete="email"	- Required
-- Normalize whitespace/lowercase before validation; valid email, max 254 Unicode code points	- "Email address is required."
+- Strip leading/trailing whitespace and lowercase using Locale.ROOT-equivalent semantics before validation; valid email, max 254 Unicode code points after normalization	- "Email address is required."
 - "Please enter a valid email address."
 - "Email cannot exceed 254 Unicode code points."
 Password	password	type="password"
@@ -297,28 +297,29 @@ Code
    * Action: Discard token-value-b. Fetch new anonymous token prior to any further write actions.
 +---------------------------------------------------------------------------------------------------------+
 9. HTTP Error & Problem Details Handling Matrix
-All backend error payloads strictly implement RFC 7807 (application/problem+json).
+Application-generated errors use RFC 9457 Problem Details (`application/problem+json`); framework/transport failures are not guaranteed to have this shape. The UI must safely handle non-JSON and unknown responses.
 code
 JSON
 {
   "type": "about:blank",
-  "title": "Unauthorized",
+  "title": "Authentication failed",
   "status": 401,
   "detail": "Invalid email or password",
-  "instance": "/api/v1/auth/login",
+  "instance": "urn:uuid:00000000-0000-4000-8000-000000000001",
+  "requestId": "00000000-0000-4000-8000-000000000001",
   "code": "INVALID_CREDENTIALS"
 }
 Complete Error Handling Matrix
 HTTP Status	Backend code	Backend detail	UI Feedback Pattern	Displayed User-Facing Message	Recovery Action
 400 Bad Request	VALIDATION_ERROR	"Request validation failed"	Field helper errors	Inline errors mapped from errors map under corresponding inputs	Correct field errors and submit
-400 Bad Request	INVALID_REQUEST	"Request body is invalid"	StatusAlert (error)	"The submitted request is invalid. Please refresh the page and try again."	Re-initialize form
+400 Bad Request	INVALID_REQUEST	"Request body or parameters are invalid"	StatusAlert (error)	"The submitted request is invalid. Please refresh the page and try again."	Re-initialize form
 401 Unauthorized	INVALID_CREDENTIALS	"Invalid email or password"	StatusAlert (error)	"Invalid email or password. Please try again." (Generic safe message)	Re-enter password; focus password field
-401 Unauthorized	UNAUTHENTICATED	"Authentication required"	SessionExpiredDialog	"Your session has timed out. Please log in to continue."	Launch LoginModal; preserve non-sensitive draft input
-403 Forbidden	CSRF_INVALID	"CSRF validation failed"	StatusAlert (warning)	"Security validation expired. Refreshing token..."	Fetch GET /api/v1/auth/csrf; prompt user-initiated retry (no automatic replay)
-403 Forbidden	ACCESS_DENIED	"Access denied"	StatusAlert (error)	"You do not have permission to perform this action."	Do not refresh CSRF automatically; offer safe navigation
-403 Forbidden	FORBIDDEN (legacy/unknown)	"Unspecified denial"	StatusAlert (error)	"Unable to complete this request."	Safe generic handling; do not classify as CSRF based on route or message
+401 Unauthorized	UNAUTHENTICATED	"Sign in to continue"	SessionExpiredDialog	"Your session has timed out. Please log in to continue."	Launch LoginModal; preserve non-sensitive draft input
+403 Forbidden	CSRF_INVALID	"Refresh request verification and try again"	StatusAlert (warning)	"Security validation expired. Refreshing token..."	Fetch GET /api/v1/auth/csrf; prompt user-initiated retry (no automatic replay)
+403 Forbidden	ACCESS_DENIED	"You do not have permission to perform this action"	StatusAlert (error)	"You do not have permission to perform this action."	Do not refresh CSRF automatically; offer safe navigation
+403 Forbidden	FORBIDDEN (legacy/unknown)	Not a current backend ErrorCode; legacy/unknown response	StatusAlert (error)	"Unable to complete this request."	Safe generic handling; do not classify as CSRF based on route or message
 409 Conflict	EMAIL_CONFLICT	"An account with this email already exists"	StatusAlert (error) + Inline error	"An account with this email already exists. Please log in instead."	Switch to LoginModal with pre-filled email
-500 Internal Error	INTERNAL_ERROR	Internal server error	StatusAlert (error)	"A server error occurred. Please try again in a few moments."	User retry button
+500 Internal Error	INTERNAL_ERROR	"The request could not be completed"	StatusAlert (error)	"A server error occurred. Please try again in a few moments."	User retry button
 10. Design-to-API Mapping
 User Operation	Method & Endpoint	Headers	Request Body	Success Outcome	Error Codes Handled
 CSRF Bootstrap	GET /api/v1/auth/csrf	Accept: application/json	None	200 OK
@@ -412,7 +413,7 @@ Basic bootstrap only	Complete lifecycle: Bootstrap
 HTTP 403 Disambiguation
 Assumed 403 always meant CSRF expiry	Disambiguated: 403 can be authorization OR CSRF. No auto-replay. Added integration question for discrete backend codes.	Correction C
 Problem Details Codes
-Included unsupported AUTH_INVALID_CREDENTIALS	Replaced with verified PR #10 codes: INVALID_CREDENTIALS, UNAUTHENTICATED, VALIDATION_ERROR, EMAIL_CONFLICT.	Correction D & PR #10 ApiErrors.java
+Included unsupported AUTH_INVALID_CREDENTIALS	Replaced with verified PR #10 codes: INVALID_CREDENTIALS, UNAUTHENTICATED, VALIDATION_ERROR, EMAIL_CONFLICT.	Correction D & PR #10 error/ErrorCode.java and error/ApiProblemFactory.java
 Registration Form Fields
 Suggested first/last split and strict RFC 5322 regex	Standardized: fullName (1–50 Unicode code points), normalized email (max 254 Unicode code points), password (12–128 Unicode code points). confirmPassword is client-only.	Correction E & PR #10 RegisterRequest.java
 Accessibility Specs
@@ -428,7 +429,7 @@ Resolved for backend PR #10: use CSRF_INVALID for CSRF rejection and ACCESS_DENI
 CR-01 (CSRF Route Standardization to /api/v1/auth/csrf): APPROVED & INTEGRATED.
 CR-02 (Removal of Forgotten Password Link): APPROVED DESIGN; frontend removal NOT IMPLEMENTED (CR-03 hold).
 CR-03 (Frontend Legacy Storage Migration): ON HOLD.
-Reminder: Legacy frontend src/redux/sagas/authSaga.tsx still stores localStorage.setItem('access_token', user.id). Revision 3 defines the target session-cookie architecture in Section 7, but per strict instructions, no frontend source code has been altered. Implementation of CR-03 remains pending Tech Lead authorization.
+Reminder: Legacy frontend src/controllers/feature/auth/authSaga.tsx still stores localStorage.setItem('access_token', user.id). Revision 3 defines the target session-cookie architecture in Section 7, but per strict instructions, no frontend source code has been altered. Implementation of CR-03 remains pending Tech Lead authorization.
 
 ## 2026-11-02 — CR-04 / CR-05 UX contract-alignment addendum
 
@@ -439,3 +440,14 @@ This addendum is a documentation proposal for Tech Lead review, not permission t
 **CR-05 client-side registration rules.** Require a nonblank `fullName` of 1–50 Unicode code points, a nonblank password of 12–128 Unicode code points (do not trim, normalize or truncate password), and a valid normalized email of at most 254 Unicode code points. Normalize email by stripping leading/trailing whitespace and applying `Locale.ROOT`-equivalent lowercase **before** email format and length validation and before sending the request. JSON Schema `format` and `maxLength` alone do not implement preprocessing. For login, apply normalized-email validation, but preserve the supplied non-null string password exactly and do not reapply registration password length constraints. Client counters must count Unicode code points, not UTF-16 units or bytes.
 
 **Scope and compatibility.** Existing React authentication still uses legacy client-side/localStorage behavior and an external `/users` API; it is not yet an adopted consumer of the new backend auth endpoints. Do not migrate it under this PR. CR-02 removes the inactive Forgotten Password link **when separately authorized frontend implementation occurs**; no link removal is claimed here. No production code, FINAL baseline, OpenAPI or Backend file is changed by this UX addendum. Real browser HTTPS/proxy/cookie/CSRF verification and consumer acceptance remain separate gates.
+
+
+## 2026-11-03 — CR-06 documentation consistency clarification (approved scope)
+
+This is a **documentation-only correction on Draft PR #12**. It does not authorize changes to frontend/backend code, OpenAPI PR #13, the FINAL baseline, or merging. The existing UI-01, UI-02, UX-01 decisions and CR-03 frontend hold remain unchanged.
+
+- **Problem Details and correlation:** Backend PR #10 uses Spring `ProblemDetail` aligned with **RFC 9457**, with `application/problem+json` for application-generated errors. `instance` is an opaque `urn:uuid:<requestId>`, not a request URL or a value derived from untrusted paths/queries. The illustrative UUID in Section 9 is synthetic. `code` is required for mapped application errors; `requestId` and `X-Request-ID` are server-generated correlation data. Do not treat every framework/transport failure as guaranteed to return a JSON Problem body.
+- **Backend error detail source:** Treat `backend/src/main/java/com/commerceflow/backend/error/ErrorCode.java` as the authoritative source for exact status/title/detail pairs and `ApiProblemFactory.java` for response shape. The Section 9 matrix now reflects current backend details for listed codes. User-facing copy remains separate from raw backend details. Other mapped codes include `SERVICE_UNAVAILABLE` (503), `METHOD_NOT_ALLOWED` (405), and `UNSUPPORTED_MEDIA_TYPE` (415). Legacy `FORBIDDEN` is not a current backend error code; retain only a safe generic fallback for older clients.
+- **CR-05 input boundaries:** `fullName` must be nonblank and at most 50 Unicode code points; no new client-side trimming/normalization/truncation is authorized. Email is stripped at both ends and lowercased with `Locale.ROOT`-equivalent semantics before email validation and the 254-code-point limit. Password is nonblank and 12–128 Unicode code points at registration, preserved exactly without trimming/normalization. Login password is a non-null string and does not inherit registration length rules. Count Unicode code points rather than UTF-16 units.
+- **Current references:** Backend implementation is in `auth/AuthController.java`, `auth/RegisterRequest.java`, `auth/SecurityConfiguration.java`, and `error/ErrorCode.java` / `error/ApiProblemFactory.java`. The observed legacy frontend auth saga is `src/controllers/feature/auth/authSaga.tsx`; any older `src/redux/sagas/authSaga.tsx` reference is superseded. Refer to the proposed contract in PR #13, not to it as an already-published FINAL baseline.
+- **Release boundaries:** PR #12 remains PROPOSED; PR #13 remains PROPOSED; frontend CR-03 stays ON HOLD. No claim is made here that external consumers, browser/staging behavior, or FINAL contract publication have passed review.
