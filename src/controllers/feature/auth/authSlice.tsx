@@ -1,59 +1,61 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "controllers/app/store";
-import { IUser } from "models/types/user";
-
-export interface LoginPayload {
-    email: string;
-    password: string;
-}
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from 'controllers/app/store';
+import { AuthFailure, LoginPayload, RegisterPayload, UserProfile } from './authModels';
+export type { LoginPayload } from './authModels';
 
 export interface AuthState {
-    isLoggedIn: boolean;
-    logging?: boolean;
-    currentUser?: IUser;
-    errorMessage?: string;
+  isLoggedIn: boolean;
+  initializing: boolean;
+  pending?: 'login' | 'register' | 'logout' | 'refresh';
+  currentUser?: UserProfile;
+  error?: AuthFailure;
+  notice?: string;
+  noticeSeverity?: 'success' | 'warning' | 'info';
+  loginEmail?: string;
+  dialog?: 'login' | 'register';
+  csrfReady: boolean;
 }
-
-const initialState: AuthState = {
-    isLoggedIn: false,
-    logging: false,
-    currentUser: undefined,
-    errorMessage: "",
-}
-
-const authSlice = createSlice({
-    name: "auth",
-    initialState,
-    reducers: {
-        login(state, action: PayloadAction<LoginPayload>) {
-            state.logging = true
-        },
-        loginSuccess(state, action: PayloadAction<IUser>) {
-            state.isLoggedIn = true;
-            state.logging = false;
-            state.currentUser = action.payload
-        },
-        loginFailed(state, action: PayloadAction<string>) {
-            console.log("loginFailed", action.payload)
-            state.logging = false;
-            state.errorMessage = action.payload;
-        },
-
-        logout(state) {
-            state.isLoggedIn = false;
-            state.currentUser = undefined;
-        },
-    }
-})
-
-//Actions
+export const initialState: AuthState = { isLoggedIn: false, initializing: true, csrfReady: false };
+const authSlice = createSlice({ name: 'auth', initialState, reducers: {
+  login(state, _action: PayloadAction<LoginPayload>) { state.pending = 'login'; state.error = undefined; state.notice = undefined; },
+  register(state, _action: PayloadAction<RegisterPayload>) { state.pending = 'register'; state.error = undefined; },
+  logout(state) { state.pending = 'logout'; state.error = undefined; state.notice = undefined; },
+  refreshCsrf(state) { state.pending = 'refresh'; state.error = undefined; },
+  securitySettled(state) { state.pending = undefined; },
+  csrfReady(state, action: PayloadAction<boolean>) { state.csrfReady = action.payload; },
+  restored(state, action: PayloadAction<UserProfile | undefined>) {
+    state.initializing = false; state.currentUser = action.payload; state.isLoggedIn = !!action.payload;
+  },
+  loginSuccess(state, action: PayloadAction<UserProfile>) {
+    state.currentUser = action.payload; state.isLoggedIn = true;
+    state.pending = 'refresh'; state.dialog = undefined; state.notice = 'You have successfully logged in.'; state.noticeSeverity = 'success';
+  },
+  registered(state, action: PayloadAction<string>) {
+    state.pending = undefined; state.dialog = 'login'; state.loginEmail = action.payload;
+    state.notice = 'Account created successfully. Please log in.'; state.noticeSeverity = 'success';
+  },
+  loggedOut(state) {
+    state.currentUser = undefined; state.isLoggedIn = false;
+    state.pending = 'refresh'; state.notice = 'You have successfully logged out.'; state.noticeSeverity = 'success';
+  },
+  failed(state, action: PayloadAction<AuthFailure>) { state.pending = undefined; state.error = action.payload; },
+  refreshed(state) { state.pending = undefined; state.notice = 'Security verification refreshed. Please submit again.'; state.noticeSeverity = 'info'; },
+  sessionExpired(state) {
+    const wasAuthenticated = state.isLoggedIn;
+    state.currentUser = undefined; state.isLoggedIn = false; state.csrfReady = false;
+    if (wasAuthenticated) { state.dialog = 'login'; state.notice = 'Your session has expired. Please log in again.'; state.noticeSeverity = 'warning'; }
+  },
+  openDialog(state, action: PayloadAction<'login' | 'register'>) {
+    state.dialog = action.payload; state.error = undefined; state.notice = undefined;
+  },
+  prefillLogin(state, action: PayloadAction<string>) {
+    state.dialog = 'login'; state.loginEmail = action.payload; state.error = undefined; state.notice = undefined;
+  },
+  closeDialog(state) { if (!state.pending) { state.dialog = undefined; state.error = undefined; state.notice = undefined; } },
+  dismissFeedback(state) { state.error = undefined; state.notice = undefined; },
+} });
 export const authActions = authSlice.actions;
-
-//Selectors
 export const selectIsLoggedIn = (state: RootState) => state.auth.isLoggedIn;
-export const selectIsLogging = (state: RootState) => state.auth.logging;
+export const selectIsLogging = (state: RootState) => state.auth.pending === 'login';
 export const currentUser = (state: RootState) => state.auth.currentUser;
-
-//Reducers
-const authReducers = authSlice.reducer;
-export default authReducers;
+export default authSlice.reducer;
