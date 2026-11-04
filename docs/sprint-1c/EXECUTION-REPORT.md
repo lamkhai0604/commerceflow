@@ -1,6 +1,10 @@
 # Gate 1 local execution report
 
-Overall: **BLOCKED for acceptance**, not production-ready.
+Historical pre-correction report: **BLOCKED at 25ffef3**. The approved CR-S1C-01
+correction and completed 15/15 local revalidation are recorded in
+[CR-S1C-01-VERIFICATION.md](CR-S1C-01-VERIFICATION.md). Original failure evidence
+below is preserved; it is not the current local result. Hosted CI/review gates
+must be checked separately; no production readiness or FINAL approval is implied.
 
 Base develop: `b2b997b8d1f1634141f10092d3804bae328ac51d`.
 Tested integration implementation: `25ffef3a747a2863beef665152241b1eabf6dfbe`.

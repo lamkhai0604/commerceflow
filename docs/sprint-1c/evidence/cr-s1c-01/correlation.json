@@ -1,0 +1,44 @@
+[
+  {
+    "status": 409,
+    "expectedCode": "EMAIL_CONFLICT",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 400,
+    "expectedCode": "VALIDATION_ERROR",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 403,
+    "expectedCode": "CSRF_INVALID",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 403,
+    "expectedCode": "CSRF_INVALID",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 401,
+    "expectedCode": "UNAUTHENTICATED",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 403,
+    "expectedCode": "ACCESS_DENIED",
+    "headerCount": 1,
+    "allMatchBody": true
+  },
+  {
+    "status": 403,
+    "expectedCode": "CSRF_INVALID",
+    "headerCount": 1,
+    "allMatchBody": true
+  }
+]

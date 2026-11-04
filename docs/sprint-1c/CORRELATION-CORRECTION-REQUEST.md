@@ -1,6 +1,9 @@
 # Proposed backend correction — separate approval required
 
-Status: NOT IMPLEMENTED. Gate 2 remains HOLD.
+Status: CR-S1C-01 IMPLEMENTED under explicit Product Owner authorization.
+Gate 2 remains HOLD except for this narrowly approved correction. Original
+observation and proposal below are retained as historical evidence. Current
+verification is recorded in CR-S1C-01-VERIFICATION.md.
 
 ## Confirmed observation
 
@@ -48,3 +51,15 @@ implemented here. The existing contract is unchanged.
 Tech Lead and Product Owner must authorize any backend production correction
 separately. Gate 1 currently changes only test infrastructure, tests and docs.
 Gemini independent review is requested in the Draft PR. No merge or deployment.
+
+## Approved correction
+
+Commit `dd1fba1865784e20e276a56eceaaa3b8763c7ac6` removes only the redundant
+X-Request-ID assignment from ApiProblemFactory.headers(). RequestCorrelationFilter
+remains authoritative for MVC headers. The existing direct security/filter writer
+continues to use setHeader (replacement, not append); its behavior is unchanged.
+The shared real-HTTP integration assertion now checks all header values with
+containsExactly(body.requestId), preserving UUID and instance parity checks. This
+covers MVC 400/409/500 and filter/security 401/403, including both CSRF_INVALID
+and ACCESS_DENIED. The filter-failure unit test also verifies singleton UUID and
+instance parity. No authentication, session, API or schema behavior changes.

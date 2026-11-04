@@ -173,3 +173,11 @@ See [EXECUTION-REPORT.md](EXECUTION-REPORT.md): frontend 90 PASS, backend 49 PAS
 lifecycle safety 5 PASS; HTTPS matrix 13 PASS / 2 FAIL / 0 SKIPPED. Acceptance is
 blocked by [duplicate backend correlation headers](CORRELATION-CORRECTION-REQUEST.md).
 Both Chromium certificate gates passed; no backend fix is included.
+
+## Approved correlation correction
+
+CR-S1C-01 removes the redundant backend MVC correlation-header assignment and
+adds strict singleton-header regression assertions. See
+[CR-S1C-01-VERIFICATION.md](CR-S1C-01-VERIFICATION.md) for the current 15/15 local
+HTTPS result, exact commands and preserved before/after evidence. Gate 2 remains
+HOLD; this is only the explicitly authorized backend exception.
