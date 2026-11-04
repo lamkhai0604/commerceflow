@@ -28,7 +28,8 @@ No secret values are reproduced here.
 - Reviewed tracked workflows, Dockerfile/Compose, browser/build/TypeScript/IDE
   configuration and auth security configuration. CI refers to environment or
   generated test values; no confirmed production secret found.
-- Pattern scan of all 301 tracked files checked private-key markers, common
+- Pattern scan of text-decodable files in the 301-file tracked inventory checked
+  private-key markers, common
   GitHub/AWS/Slack token signatures, URLs embedding credentials and quoted
   password/token/key assignments. Candidate hits were reviewed: synthetic test
   passwords/tokens and validation/UI strings (backend auth tests, authApi tests,
@@ -37,7 +38,8 @@ No secret values are reproduced here.
   hashes and public service/repository URLs are not credentials.
 - No tracked .npmrc, .netrc, private-key/certificate-store file or credential file
   was found. Local ignored files and platform secret values were deliberately
-  not dumped. Git history and third-party credential validity were not tested.
+  not dumped. Git history, binary-asset contents and third-party credential validity were not
+  tested.
 
 ## Exact proposed file-change plan — separate Product Owner approval required
 

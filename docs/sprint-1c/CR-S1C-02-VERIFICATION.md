@@ -54,8 +54,31 @@ and V4 migration 3. Existing Browserslist age/Node deprecation notices remain;
 no lint warning suppression. The first lint attempt caught two literal-shell
 string warnings in new test fixtures; corrected before the passing rerun.
 
-HTTPS revalidation and hosted final-head CI conclusions are recorded below when
-completed; this preparation record does not claim those unfinished steps passed.
+## Completed HTTPS revalidation and cleanup
+
+```sh
+bash e2e/scripts/run.sh local-cr02-20261104
+bash e2e/scripts/cleanup.sh local-cr02-20261104
+```
+
+Runnable tested commit: 6048b17a986a416dc622fa3b7087c5bb2461c768. Run exited 0:
+15/15 PASS, 0 failures, 0 skips (14 genuine backend, one controlled synthetic).
+All original E2E assertions remain unchanged. E2E-01–06 lifecycle PASS; 07–09 safe
+credential/conflict/validation errors PASS; 10 CSRF negatives and explicit recovery
+PASS; 11–12 expiry/role denial PASS; 13–14 secure cookie/rotation/replay PASS;
+15 synthetic non-JSON fallback PASS. Both untrusted rejection and trusted private
+NSS certificate validation PASS with TLS verification enabled.
+
+Owned-resource cleanup PASS, followed by a second exact-run cleanup PASS proving
+real idempotency. Disposable env/keys, containers/networks/tmpfs and browser image
+removed; sanitized evidence preserved in evidence/cr-s1c-02. Existing Docker data
+and host trust unchanged; shared image/build cache may remain. New fault tests
+simulate failures against private fixtures only; no real infrastructure fault was
+injected. All observed local verification is green.
+
+The subsequent documentation/evidence commit changes no runnable code. Final head
+SHA and hosted CI conclusions/links are recorded in the PR completion comment;
+no pending CI is inferred successful here.
 
 ## Audit boundaries and approval gates
 
