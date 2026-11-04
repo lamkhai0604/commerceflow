@@ -1,0 +1,1213 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow API
+  version: 1.1.0-auth-PROPOSED
+  description: PROPOSED CR-04/CR-05 authentication contract revision for Tech Lead and consumer review. Not FINAL
+    and not authorization to merge or release. API URLs remain /api/v1. Future commerce operations retain the design
+    baseline and are not implementation claims.
+servers:
+- url: /api/v1
+security:
+- sessionCookie: []
+tags:
+- name: Authentication
+- name: Catalog
+- name: Cart
+- name: Orders
+- name: Administration
+paths:
+  /auth/csrf:
+    get:
+      tags:
+      - Authentication
+      summary: Bootstrap CSRF protection and session
+      security: []
+      responses:
+        '200':
+          description: CSRF token and associated cookie state
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - headerName
+                - token
+                properties:
+                  headerName:
+                    type: string
+                    example: X-CSRF-TOKEN
+                  token:
+                    type: string
+          headers:
+            X-Request-ID:
+              description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+              schema:
+                type: string
+                format: uuid
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      description: 'Return the session-associated CSRF token and required header name. Authentication is not required. Send the token in X-CSRF-TOKEN on subsequent state-changing requests.'
+  /auth/register:
+    post:
+      tags:
+      - Authentication
+      summary: Register a customer account
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Customer account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          headers:
+            X-Request-ID:
+              description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+              schema:
+                type: string
+                format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+      description: 'Create a CUSTOMER account without authenticating the caller. Requires a valid session-associated CSRF header. Normalize email before validation, apply registration constraints, and reject unknown JSON properties. Invalid requests return 400; verified duplicate email returns 409.'
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Authenticate and establish server-side session
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated session established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          headers:
+            X-Request-ID:
+              description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+              schema:
+                type: string
+                format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      description: 'Authenticate valid credentials and establish a server-side session, rotating the session identifier and invalidating the previous CSRF token. Requires a valid CSRF header. Invalid request/schema returns 400; incorrect or unavailable-account credentials return generic 401. Bootstrap CSRF again before subsequent writes.'
+  /auth/logout:
+    post:
+      tags:
+      - Authentication
+      summary: Invalidate authenticated session
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204':
+          description: Session invalidated
+          headers:
+            X-Request-ID:
+              description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+              schema:
+                type: string
+                format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+      description: 'Invalidate the authenticated server-side session and expire its cookie. Requires authentication and a valid CSRF header. Success returns 204 without a body. CSRF rejection may precede anonymous-session rejection.'
+  /auth/me:
+    get:
+      tags:
+      - Authentication
+      summary: Get authenticated user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          headers:
+            X-Request-ID:
+              description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+              schema:
+                type: string
+                format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      description: 'Return the authenticated session principal profile and explicitly assigned roles. No CSRF header or particular role is required. Missing or expired authentication returns 401.'
+  /account/profile:
+    get:
+      tags:
+      - Authentication
+      summary: Get customer profile
+      responses:
+        '200':
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /products:
+    get:
+      tags:
+      - Catalog
+      summary: Browse and search active products
+      security: []
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 120
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        schema:
+          type: string
+          enum:
+          - name,asc
+          - name,desc
+          - price,asc
+          - price,desc
+      responses:
+        '200':
+          description: Paginated product listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /products/{productId}:
+    get:
+      tags:
+      - Catalog
+      summary: View active product details
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /categories:
+    get:
+      tags:
+      - Catalog
+      summary: List product categories
+      security: []
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /cart:
+    get:
+      tags:
+      - Cart
+      summary: Get current customer's cart
+      responses:
+        '200':
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /cart/items:
+    post:
+      tags:
+      - Cart
+      summary: Add item to current customer's cart
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /cart/items/{itemId}:
+    parameters:
+    - $ref: '#/components/parameters/CartItemId'
+    patch:
+      tags:
+      - Cart
+      summary: Update cart item quantity
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags:
+      - Cart
+      summary: Remove cart item
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204':
+          description: Item removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /orders:
+    get:
+      tags:
+      - Orders
+      summary: List own orders
+      responses:
+        '200':
+          description: Customer order history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Orders
+      summary: Place idempotent mock-payment order
+      description: Authenticated checkout with CSRF and customer-scoped Idempotency-Key. The key binds the first
+        accepted cart snapshot and canonical explicit request fields. Completed identical retries replay the stored
+        HTTP status and body, even after cart clearing; mismatched explicit fields return 409. Active concurrent
+        same-key requests return 409 with Retry-After. A database lease and fencing generation prevent stale workers
+        from committing. Conditional stock decrement, order and immutable snapshots, purchased-cart clearing, and
+        successful replay result commit atomically. Terminal mock declines replay 402 without business mutation.
+        Transient mock simulator failures return retryable 503 without business mutation. Retain completed outcomes
+        at least 24 hours; expired keys do not guarantee deduplication. See Accepted Design Baseline v1.0.
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: Newly created order OR identical replay of an originally successful 201 response; same order
+            ID and no additional side effects.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          headers:
+            Idempotent-Replayed:
+              description: Optional true for a replay of a completed request.
+              schema:
+                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 'Problem Details: INSUFFICIENT_STOCK (terminal for this cart snapshot), IDEMPOTENCY_PAYLOAD_MISMATCH,
+            or IDEMPOTENCY_IN_PROGRESS (retryable with same key).'
+          headers:
+            Retry-After:
+              description: Present for IDEMPOTENCY_IN_PROGRESS when the client should retry after the indicated
+                seconds.
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Retryable temporary mock payment service outage. Problem code PAYMENT_TEMPORARILY_UNAVAILABLE;
+            no order or inventory changes.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '402':
+          description: Terminal deterministic mock payment decline. Replayed for identical completed retry. No order
+            or inventory changes. Problem code PAYMENT_DECLINED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /orders/{orderId}:
+    get:
+      tags:
+      - Orders
+      summary: Get own order details; other customers' orders are concealed
+      parameters:
+      - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/products:
+    post:
+      tags:
+      - Administration
+      summary: Create product (ADMIN)
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWriteRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/products/{productId}:
+    patch:
+      tags:
+      - Administration
+      summary: Update or deactivate product (ADMIN)
+      parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPatchRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/products/{productId}/inventory:
+    patch:
+      tags:
+      - Administration
+      summary: Set product-level stock (ADMIN)
+      parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - stockQuantity
+              properties:
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: Inventory updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/orders:
+    get:
+      tags:
+      - Administration
+      summary: List all orders (ADMIN)
+      responses:
+        '200':
+          description: All orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/orders/{orderId}/status:
+    patch:
+      tags:
+      - Administration
+      summary: Transition order status (ADMIN)
+      parameters:
+      - $ref: '#/components/parameters/OrderId'
+      - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/OrderStatus'
+      responses:
+        '200':
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or already cancelled; no inventory change.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      description: ADMIN may transition CONFIRMED -> SHIPPED -> DELIVERED, or CONFIRMED -> CANCELLED. No cancellation
+        is allowed from SHIPPED, DELIVERED, or CANCELLED. Cancellation restores inventory exactly once in the same
+        database transaction as the status transition; repeated cancellation returns 409 and never restores stock
+        twice. Cancellation is permitted only from CONFIRMED; inventory is restored exactly once in the same transaction
+        as the state transition. Repeated cancellation or cancellation after shipment returns 409.
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: SESSION
+      description: Server-managed SESSION cookie; HttpOnly, SameSite=Lax, Path=/, Secure by default (production). Secure can be disabled only by explicit local configuration. Cookie behavior behind HTTPS/reverse proxy requires browser verification.
+  parameters:
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Token returned by CSRF bootstrap endpoint.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+      description: Required checkout key scoped to authenticated customer. Completed outcomes retained at least
+        24 hours; same-key different canonical request fingerprint or in-progress same-key request returns 409.
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CartItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+    Unauthorized:
+      description: Authentication required or failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+    Forbidden:
+      description: 403 CSRF_INVALID for missing/invalid/stale/cross-session header; ACCESS_DENIED for insufficient
+        authenticated authority. CSRF can precede anonymous 401. Legacy FORBIDDEN is generic only.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+    NotFound:
+      description: Resource not found or not visible to caller
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: State conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+    ServiceUnavailable:
+      description: 'Positively identified temporary unavailability: SERVICE_UNAVAILABLE. Mutation outcome may be
+        unknown; no automatic POST retry.'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    InternalError:
+      description: 'Sanitized unexpected failure: INTERNAL_ERROR; never expose database details.'
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    MethodNotAllowed:
+      description: METHOD_NOT_ALLOWED; preserve Allow header after applicable security checks.
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnsupportedMediaType:
+      description: UNSUPPORTED_MEDIA_TYPE for unsupported request content type.
+      headers:
+        X-Request-ID:
+          description: Server-generated diagnostic request ID; clients must not treat it as an auth token.
+          schema:
+            type: string
+            format: uuid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+          example: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          description: Opaque occurrence URI; corrected authentication errors use urn:uuid:<requestId>. Do not parse
+            it.
+        code:
+          type: string
+          description: Stable machine-readable application code. Use documented code/status pairs, never parse title/detail.
+            Unknown codes require a safe fallback. Approved checkout code is INSUFFICIENT_STOCK.
+        requestId:
+          type: string
+          format: uuid
+          description: Server-generated diagnostic ID, identical to X-Request-ID when present; not authentication
+            or idempotency data.
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Retained field-to-safe-message map. No rejected values; clients must not parse messages.
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+                enum:
+                - email
+                - password
+                - fullName
+              code:
+                type: string
+                description: 'Current authentication subcodes: REQUIRED, INVALID_FORMAT, INVALID_VALUE. Unknown
+                  future subcodes require generic field feedback.'
+    UserProfile:
+      type: object
+      required:
+      - id
+      - email
+      - fullName
+      - roles
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
+        fullName:
+          type: string
+          maxLength: 50
+          description: Required nonblank full name; maximum 50 Unicode code points, not UTF-16 units, bytes or grapheme
+            clusters. No new normalization/truncation.
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - CUSTOMER
+            - ADMIN
+          description: Independent roles. ADMIN does not inherit CUSTOMER. Dual-role accounts require deliberate
+            authorization; authenticated no-role accounts may access /auth/me.
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      - fullName
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: Required nonblank password of 12–128 Unicode code points; never trim, normalize or truncate.
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Required nonblank full name; maximum 50 Unicode code points, not UTF-16 units, bytes or grapheme
+            clusters. No new normalization/truncation.
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Normalize by stripping leading/trailing whitespace and Locale.ROOT-equivalent lowercasing before validation; maximum 254 Unicode code points after normalization. Clients must normalize before applying format/maxLength checks; JSON Schema does not perform preprocessing.
+        password:
+          type: string
+          description: Required non-null JSON string, preserved exactly. Registration creation-length policy is
+            not reapplied; an empty incorrect password receives 401.
+    Money:
+      type: string
+      pattern: ^[0-9]+[.][0-9]{2}$
+      example: '89.99'
+      description: USD decimal amount represented as a string.
+    Category:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+    Product:
+      type: object
+      required:
+      - id
+      - name
+      - price
+      - currency
+      - available
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        price:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+          const: USD
+        available:
+          type: boolean
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: Admin-facing data; public response projection may omit.
+        active:
+          type: boolean
+          description: Admin-facing data; public response projection may omit.
+    ProductPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          minimum: 0
+    ProductWriteRequest:
+      type: object
+      required:
+      - name
+      - slug
+      - categoryId
+      - price
+      - stockQuantity
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 200
+        categoryId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+        stockQuantity:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+          default: true
+    ProductPatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        price:
+          $ref: '#/components/schemas/Money'
+        active:
+          type: boolean
+    AddCartItemRequest:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+    CartItem:
+      type: object
+      required:
+      - id
+      - productId
+      - quantity
+      - unitPrice
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          $ref: '#/components/schemas/Money'
+    Cart:
+      type: object
+      required:
+      - items
+      - currency
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        currency:
+          type: string
+          const: USD
+        estimatedTotal:
+          $ref: '#/components/schemas/Money'
+    ShippingAddress:
+      type: object
+      required:
+      - recipientName
+      - addressLine1
+      - city
+      - state
+      - postalCode
+      - countryCode
+      properties:
+        recipientName:
+          type: string
+          minLength: 1
+          maxLength: 150
+        addressLine1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        addressLine2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        state:
+          type: string
+          minLength: 1
+          maxLength: 100
+        postalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+        countryCode:
+          type: string
+          const: US
+          description: MVP shipping scope proposed as US-only.
+    CheckoutRequest:
+      type: object
+      required:
+      - shippingAddress
+      properties:
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+    OrderStatus:
+      type: string
+      enum:
+      - CONFIRMED
+      - SHIPPED
+      - DELIVERED
+      - CANCELLED
+    PaymentStatus:
+      type: string
+      enum:
+      - SUCCEEDED
+      - FAILED
+    OrderItem:
+      type: object
+      required:
+      - productName
+      - quantity
+      - unitPrice
+      - lineTotal
+      properties:
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          $ref: '#/components/schemas/Money'
+        lineTotal:
+          $ref: '#/components/schemas/Money'
+    Order:
+      type: object
+      required:
+      - id
+      - orderStatus
+      - paymentStatus
+      - totalAmount
+      - currency
+      - items
+      - shippingAddress
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderStatus:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        totalAmount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+          const: USD
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        createdAt:
+          type: string
+          format: date-time
+x-review-status: 'PROPOSED: compatibility and contract approval required before merge/release'
+x-legacy-compatibility:
+  FORBIDDEN: Legacy generic denial only; clients must not infer CSRF or automatically replay mutations. Corrected
+    backend emits CSRF_INVALID or ACCESS_DENIED; no runtime version switch or alias is introduced.
+x-auth-error-code-statuses:
+  EMAIL_CONFLICT: 409
+  INVALID_CREDENTIALS: 401
+  UNAUTHENTICATED: 401
+  CSRF_INVALID: 403
+  ACCESS_DENIED: 403
+  VALIDATION_ERROR: 400
+  INVALID_REQUEST: 400
+  INTERNAL_ERROR: 500
+  SERVICE_UNAVAILABLE: 503
+  METHOD_NOT_ALLOWED: 405
+  UNSUPPORTED_MEDIA_TYPE: 415
