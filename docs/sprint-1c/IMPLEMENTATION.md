@@ -19,15 +19,17 @@ Windows acceptance, contract FINAL publication or merge/deployment approval.
 - `.github/workflows/integration-e2e.yml`: dedicated PR/optional manual CI.
 - `docs/sprint-1c/`: authority, runbook and sanitized evidence/report.
 
-No changes to src/, backend production source/configuration, Flyway, OpenAPI,
-legacy commerce clients, or existing frontend/backend workflows. The test lint
+No changes to src/, backend authentication/session logic or configuration, Flyway,
+OpenAPI, legacy commerce clients, or existing frontend/backend workflows. Approved
+CR-S1C-01 is the sole backend production exception: remove the redundant MVC
+correlation-header assignment and strengthen its regression assertions. The test lint
 configuration disables only RTL's screen-query rule, which misidentifies
 Playwright page.getByRole as an RTL render query. All other checks remain active.
 
 ## Topology and trust
 
 Only `127.0.0.1:8443` is published. Caddy serves the actual React production bundle
-with SPA fallback and preserves `/api/v1` when proxying to the unmodified backend.
+with SPA fallback and preserves `/api/v1` when proxying to the existing backend with the approved correlation-header fix.
 All test networks are internal. Backend and PostgreSQL 17 have no published ports. PostgreSQL uses tmpfs, never an
 existing volume. App cookie Secure remains true. No global 401 policy changes. Caddy preserves inherited proxy settings and appends
 only backend/localhost to NO_PROXY/no_proxy so private upstream traffic never
@@ -146,7 +148,7 @@ bash e2e/scripts/cleanup.sh <exact-run-id>
 ```
 
 Cleanup validates the restricted run-ID syntax, exact owned directory and owner
-marker and rejects linked state roots/secret files. Five isolated lifecycle tests
+marker and rejects linked state roots/secret files. Eighteen isolated lifecycle tests
 use a fake Docker executable and temporary directories; they never contact Docker
 or development data. Host interpolation variables cannot override generated test
 credentials or bind paths. It uses that project's generated Compose env, removes only its containers,
@@ -154,7 +156,18 @@ networks/tmpfs and labeled browser image, then deletes generated credentials and
 private/public test certificates. Sanitized evidence/owner marker remain. No
 Docker prune, existing-volume deletion, migration history rewrite or real-data
 remediation. Cleanup is repeatable; review cleanup.json and absence of test-owned
-resources. Base-image/build caches may remain; they contain no test secrets.
+resources. CR-S1C-02 makes Docker access, Compose down, container/network/image
+inventories, image ownership/removal and secret deletion explicit failure stages.
+A failed query is never accepted as an empty inventory. Failure returns nonzero
+and writes sanitized status=FAIL with a stage; secretsRemoved=false and
+ownedInfrastructureRemoved=false are conservative, not claims of success.
+Credentials/keys and private logs are retained until resources are verified gone;
+keep that state private and retry the exact same cleanup command after resolving
+the reported stage. Do not delete env/keys manually to make cleanup look green.
+A later successful retry removes secrets/logs and replaces FAIL with PASS while
+preserving sanitized test evidence. run.sh preserves browser failure and also
+fails an otherwise passing run when cleanup fails. Linked run/evidence/log paths
+are rejected. Unsafe/unowned paths are not written to merely to emit a result. Base-image/build caches may remain; they contain no test secrets.
 
 ## CI and review
 
@@ -164,15 +177,19 @@ requires PostgreSQL suites to execute without skips, runs the real HTTPS suite,
 and always cleans up. It never deploys. Existing CI workflows are unchanged.
 
 Open a Draft PR to develop with actual results and limitations; request Gemini
-independent review. Stop implementation after opening it and await review/owner
-merge authorization. Windows Docker Desktop/browser acceptance remains separate.
+independent review. Keep the PR Draft and await review/owner merge authorization. Further changes
+require explicit scoped authorization, as granted for CR-S1C-01 and CR-S1C-02. Windows Docker Desktop/browser acceptance remains separate.
 
 ## Actual execution evidence
 
-See [EXECUTION-REPORT.md](EXECUTION-REPORT.md): frontend 90 PASS, backend 49 PASS,
-lifecycle safety 5 PASS; HTTPS matrix 13 PASS / 2 FAIL / 0 SKIPPED. Acceptance is
-blocked by [duplicate backend correlation headers](CORRELATION-CORRECTION-REQUEST.md).
-Both Chromium certificate gates passed; no backend fix is included.
+Current completed baseline: [CR-S1C-01-VERIFICATION.md](CR-S1C-01-VERIFICATION.md):
+frontend 90 PASS, backend 49 PASS, HTTPS 15 PASS / 0 FAIL / 0 SKIP; final baseline
+head 7d678e9 has successful Backend/Frontend/HTTPS hosted workflows. Correlation
+header defect is corrected, not an outstanding acceptance blocker. Original
+13/15 failure evidence in EXECUTION-REPORT.md/evidence/local is historical.
+CR-S1C-02 cleanup tests now total 18; its revalidation and read-only audits are
+reported in CR-S1C-02-VERIFICATION.md. Read the relevant report's tested SHA and
+actual CI conclusion rather than inferring current acceptance from old evidence.
 
 ## Approved correlation correction
 

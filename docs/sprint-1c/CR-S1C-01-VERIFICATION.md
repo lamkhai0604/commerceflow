@@ -91,14 +91,15 @@ Base-image/build caches may remain, as documented in the runbook.
 
 ## Hosted CI and remaining limitations
 
-The correction commit triggered:
-- [Backend CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41886726520): SUCCESS.
-- [Frontend CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41886726481): SUCCESS.
-- [HTTPS integration CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41886726519): pending at evidence commit preparation.
+Completed hosted CI for final baseline head
+`7d678e97137ed567bd54261f059fef82fe2abbb7`:
+- [Backend CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41887324664): SUCCESS.
+- [Frontend CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41887324715): SUCCESS.
+- [HTTPS integration CI](https://github.com/lamkhai0604/ecommerce-project/actions/runs/41887324656): SUCCESS, including all 15 browser cases, cleanup and artifact upload.
 
-This subsequent documentation/evidence commit changes no runnable code. Final
-head SHA and completed hosted conclusions are reported in the PR conversation
-and completion handoff; pending is not a PASS claim.
+The separate corrective commit dd1fba1 also passed all three workflows. These
+conclusions supersede the formerly pending status recorded during evidence
+preparation. CR-S1C-02 revalidation is recorded separately with its own SHA.
 
 No remaining local test failure. Gemini/Tech Lead review and Product Owner
 acceptance remain required; Gate 2 stays HOLD. Linux is not Windows Docker Desktop

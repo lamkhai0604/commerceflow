@@ -1,4 +1,4 @@
-# Proposed backend correction — separate approval required
+# CR-S1C-01 — approved backend correlation correction
 
 Status: CR-S1C-01 IMPLEMENTED under explicit Product Owner authorization.
 Gate 2 remains HOLD except for this narrowly approved correction. Original
@@ -46,7 +46,7 @@ Alternative: allowing duplicate/comma-separated header values would require a
 contract/consumer decision and weakens current parity; it is not recommended or
 implemented here. The existing contract is unchanged.
 
-## Approval needed
+## Original approval request (satisfied by CR-S1C-01 authorization)
 
 Tech Lead and Product Owner must authorize any backend production correction
 separately. Gate 1 currently changes only test infrastructure, tests and docs.
