@@ -1,3 +1,4 @@
+import AuthNotice from '../../AuthDialog/AuthNotice';
 import { Alert, Button, CircularProgress, Menu, MenuItem, Skeleton, Stack } from '@mui/material';
 import { useState } from 'react';
 import { AiFillSetting } from 'react-icons/ai';
@@ -17,8 +18,7 @@ const Dropdown = () => {
     {auth.dialog === 'register' && <RegisterModal onClose={close} />}
     {auth.dialog === 'login' && <LoginModal onClose={close} />}
     <Stack spacing={1}>
-      {!auth.dialog && auth.notice && <Alert severity={auth.noticeSeverity || 'success'} role={auth.noticeSeverity === 'warning' ? 'alert' : 'status'}
-        onClose={() => dispatch(authActions.dismissFeedback())}>{auth.notice}</Alert>}
+      {!auth.dialog && <AuthNotice />}
       {!auth.dialog && auth.error && <Alert severity="error" role="alert"
         onClose={() => dispatch(authActions.dismissFeedback())}>{auth.error.message}</Alert>}
       {auth.initializing ? <Skeleton width={100} aria-label="Checking your session" /> : <>

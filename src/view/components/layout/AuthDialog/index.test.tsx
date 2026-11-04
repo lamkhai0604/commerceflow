@@ -52,3 +52,67 @@ test('safe error alert clears sensitive input; CSRF recovery is user initiated',
   expect(actions.filter(a => a.type === authActions.refreshCsrf.type)).toHaveLength(1);
   expect(actions.some(a => a.type === authActions.login.type)).toBe(false);
 });
+
+test('confirm password visibility is independent', () => {
+  setup(true);
+  const password = screen.getByLabelText(/^Password/, { selector: 'input' });
+  const confirmation = screen.getByLabelText(/^Confirm password/, { selector: 'input' });
+  fireEvent.click(screen.getByRole('button', { name: 'Show confirm password' }));
+  expect(confirmation).toHaveAttribute('type', 'text'); expect(password).toHaveAttribute('type', 'password');
+  fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+  expect(password).toHaveAttribute('type', 'text');
+  fireEvent.click(screen.getByRole('button', { name: 'Hide confirm password' }));
+  expect(confirmation).toHaveAttribute('type', 'password'); expect(password).toHaveAttribute('type', 'text');
+});
+
+test('input edits clear only the relevant stale server error, without erasing newly typed passwords', () => {
+  const { store } = setup(true);
+  act(() => { store.dispatch(authActions.failed({ message: 'Check fields', fields: { email: 'Email address is required.', fullName: 'Full name is required.' } })); });
+  enter('Full name', 'Customer');
+  expect(screen.queryByText('Full name is required.')).not.toBeInTheDocument();
+  expect(screen.getByText('Email address is required.')).toBeInTheDocument();
+  enter('Password', 'new-password-123');
+  expect(screen.getByLabelText(/^Password/, { selector: 'input' })).toHaveValue('new-password-123');
+  expect(store.getState().auth.error?.fields?.fullName).toBeUndefined();
+});
+
+test('409 recovery opens login with attempted normalized email', () => {
+  const { store } = setup(true); enter('Email address', ' CUSTOMER@EXAMPLE.COM ');
+  act(() => { store.dispatch(authActions.failed({ status: 409, code: 'EMAIL_CONFLICT', message: 'Email unavailable' })); });
+  fireEvent.click(screen.getByRole('button', { name: 'Log in instead' }));
+  expect(store.getState().auth).toMatchObject({ dialog: 'login', loginEmail: 'customer@example.com' });
+});
+
+test('loading feedback appears after three seconds and clears on failure', () => {
+  jest.useFakeTimers();
+  try {
+    const { store } = setup();
+    act(() => { store.dispatch(authActions.login({ email: 'test@example.com', password: 'test' })); });
+    expect(screen.queryByText('Still working...')).not.toBeInTheDocument();
+    act(() => { jest.advanceTimersByTime(3000); });
+    expect(screen.getByText('Still working...')).toBeInTheDocument();
+    act(() => { store.dispatch(authActions.failed({ message: 'Could not confirm result.' })); });
+    expect(screen.queryByText('Still working...')).not.toBeInTheDocument();
+  } finally { jest.useRealTimers(); }
+});
+
+test('success Snackbar dismisses after 4000ms without dismissing errors', () => {
+  jest.useFakeTimers();
+  try {
+    const { store } = setup(false, { notice: 'Account created successfully. Please log in.' });
+    expect(screen.getByRole('status')).toHaveTextContent('Account created');
+    act(() => { store.dispatch(authActions.failed({ message: 'Keep this error.' })); jest.advanceTimersByTime(4000); });
+    expect(store.getState().auth.notice).toBeUndefined();
+    expect(screen.getByRole('alert')).toHaveTextContent('Keep this error.');
+  } finally { jest.useRealTimers(); }
+});
+
+test('session-expiry warning remains available beyond the success-toast duration', () => {
+  jest.useFakeTimers();
+  try {
+    const { store } = setup(false, { notice: 'Your session has expired.', noticeSeverity: 'warning' });
+    act(() => { jest.advanceTimersByTime(5000); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Your session has expired.');
+    expect(store.getState().auth.notice).toBe('Your session has expired.');
+  } finally { jest.useRealTimers(); }
+});

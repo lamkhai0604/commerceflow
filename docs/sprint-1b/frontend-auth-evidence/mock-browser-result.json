@@ -37,7 +37,8 @@
   },
   "screenshots": 2,
   "notes": [
-    "Mocked API and font stylesheet; not real HTTPS/backend cookie acceptance.",
-    "Existing jQuery template console error and blocked external assets were not edited."
+    "Mocked API/font CSS; not HTTPS/backend cookie acceptance.",
+    "Corrective UI: independent password visibility, field recovery and responsive Snackbar.",
+    "Existing template jQuery error/external assets remain outside scope."
   ]
 }

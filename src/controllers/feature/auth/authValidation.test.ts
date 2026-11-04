@@ -23,3 +23,19 @@ test('rejects blank fields and confirmation mismatch; login does not inherit cre
   expect(validateAuth({ ...valid, fullName: ' ', password: ' '.repeat(12) }, true, 'x')).toEqual(expect.objectContaining({ fullName: expect.any(String), password: expect.any(String), confirmPassword: expect.any(String) }));
   expect(validateAuth({ email: valid.email, password: 'x' })).toEqual({});
 });
+
+test.each(['"a b"@example.com', '"a@b"@example.com', 'user@localhost', 'ü@example.com', 'user@例子.公司'])('does not reject Hibernate-accepted email %s', email => {
+  expect(validateAuth({ ...valid, email }, true, valid.password)).toEqual({});
+});
+test('combining sequences and lowercase expansion count code points', () => {
+  expect(codePoints('e\u0301'.repeat(25))).toBe(50);
+  expect(normalizeEmail('İ@EXAMPLE.COM')).toBe('i\u0307@example.com');
+});
+test('separate exact min/max password copy', () => {
+  expect(validateAuth({ ...valid, password: 'x'.repeat(11) }, true, 'x'.repeat(11)).password).toBe('Password must contain at least 12 Unicode code points.');
+  expect(validateAuth({ ...valid, password: 'x'.repeat(129) }, true, 'x'.repeat(129)).password).toBe('Password cannot exceed 128 Unicode code points.');
+});
+
+test.each(['a..b@example.com', 'user@-bad.com', 'user@example.com.', 'a'.repeat(65) + '@example.com'])('rejects observed Hibernate-invalid email %s', email => {
+  expect(validateAuth({ ...valid, email }, true, valid.password).email).toBe('Please enter a valid email address.');
+});

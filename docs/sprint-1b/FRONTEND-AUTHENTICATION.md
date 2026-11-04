@@ -68,7 +68,9 @@ RFC/international-email policy.
 From repository root using Node 24:
 
 ```sh
-npx tsc --noEmit
+npm ci
+npm run typecheck
+npm run lint:auth
 CI=true npm test -- --watchAll=false --runInBand
 CI=true npm run build
 ```
@@ -102,7 +104,7 @@ No production-readiness or deployment claim is made.
 - [ ] CR-02 Forgotten Password removed; no unrelated commerce changes.
 - [ ] Actual HTTPS/browser acceptance and consumer sign-off before release.
 
-## Recorded implementation validation
+## Initial implementation validation (e2fe0a6)
 
 Base develop: `efd1890d8d869db1333f74e2b995c29382767e7a`.
 Node 24.19.0. Application TypeScript and a supplemental TypeScript check including
@@ -121,3 +123,69 @@ visual checks do not validate external asset availability or real cookies/TLS.
 
 - [Desktop registration validation](frontend-auth-evidence/registration-validation.png)
 - [Mobile post-registration login](frontend-auth-evidence/post-registration-login-mobile.png)
+
+## Approved PR #15 corrective scope
+
+Authorization: https://github.com/lamkhai0604/ecommerce-project/pull/15#issuecomment-6623419731.
+The fixes add safe REQUIRED/INVALID_FORMAT/INVALID_VALUE field copy, per-field
+stale-error clearing, independent password visibility controls, separate minimum
+and maximum password messages, bounded/normalized profile checks including UUID,
+and responsive 4000ms Snackbar notices. Persistent uncertainty/errors remain
+available for deliberate recovery; closing a toast does not dismiss an error.
+
+### Email evidence and limits
+
+Directly inspected Hibernate Validator 8.0.3.Final from the backend dependency
+cache and invoked its actual EmailValidator.isValid implementation with Java 21.
+Accepted: `"a b"@example.com`, `"a@b"@example.com`, `user@localhost`,
+`ü@example.com`, `user@例子.公司`. Rejected: `a..b@example.com`, `invalid`,
+`user@-bad.com`. Frontend tests retain these accepted edge cases rather than
+introducing a browser-native or restrictive RFC regex. The conservative precheck
+splits at the last @, rejects obvious structural failures, and leaves complete
+Hibernate/IDN validation to the server. It does not claim to duplicate all Java
+email semantics. Profile checks enforce UUID shape, normalized bounded plausible
+email, nonblank <=50-code-point name and the approved role values; invalid success
+payloads fail safely rather than authenticate from malformed data.
+
+### Context-aware 401 policy — characterization, not global behavior change
+
+| Context | Existing behavior retained | Proposed decision requiring separate design approval |
+| --- | --- | --- |
+| Startup /me | Any 401 restores signed-out state quietly, including unknown/non-JSON body | Retain |
+| Logout | Any 401 expires local identity, without claiming confirmed successful logout | Retain |
+| Login | INVALID_CREDENTIALS does not notify expiry; unknown/HTML 401 uses generic error feedback | Retain credential distinction |
+| Shared notifier | 401 UNAUTHENTICATED notifies expiry regardless of request context; unknown/HTML 401 alone does not | Introduce explicit protected/login/public request contexts before broadening expiry handling |
+
+Characterization tests preserve the shared notifier, including its unusual login
+UNAUTHENTICATED case. A future approved policy could clear identity for *protected*
+resource 401 regardless of body, while login/public-bootstrap failures avoid a
+global identity reset. **That routing/context change has not been implemented.**
+Tech Lead/Product Owner must approve the exact policy and how proxy-generated
+401 responses are classified before adoption. No new global interceptor or
+unrelated commerce transport modification is included.
+
+### Frontend CI and independent re-review
+
+`.github/workflows/frontend-ci.yml` runs on relevant frontend PR changes targeting
+develop/master using Node 24: npm ci, npm run typecheck (application and all tests),
+npm run lint:auth, all Jest tests, and CI=true production build. It requires no
+secrets or external backend. package-lock.json is unchanged. The auth lint scope
+is deliberate: full-source inspection also finds an unrelated existing unused
+`Input` import warning in `src/view/page/LandingPage/Cart/PromoteCode/index.tsx`; it is
+not suppressed or refactored here. CRA still lints its production dependency tree.
+
+Gemini independent re-review is requested for the corrective diff; findings and
+owner/Tech Lead acceptance remain pending. Real HTTPS/proxy/cookie/backend-browser
+and Windows acceptance remain release gates, not claims made by these mocks.
+
+### Corrective validation results
+
+Clean `npm ci` passed on Node 24.19.0 (1489 packages). `npm run typecheck`
+(application + all tests), `npm run lint:auth` (zero warnings), and all Jest tests
+passed: **90 tests, 7 suites, 0 failures, 0 skipped**. The initial 43-test result
+above is historical evidence for e2fe0a6, not the current corrective total.
+Session-expiry warnings remain persistent; only success/info notices auto-dismiss.
+GitHub Actions evidence and Gemini re-review status are recorded in PR #15 after
+pushing; no green CI or independent review is inferred from local tests.
+The corrective CI=true production build also compiled successfully. Existing
+Browserslist/deprecation notices are tooling notices, not disabled ESLint checks.

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from 'controllers/app/store';
-import { AuthFailure, LoginPayload, RegisterPayload, UserProfile } from './authModels';
+import { AuthField, AuthFailure, LoginPayload, RegisterPayload, UserProfile } from './authModels';
 export type { LoginPayload } from './authModels';
 
 export interface AuthState {
@@ -9,13 +9,14 @@ export interface AuthState {
   pending?: 'login' | 'register' | 'logout' | 'refresh';
   currentUser?: UserProfile;
   error?: AuthFailure;
+  errorVersion: number;
   notice?: string;
   noticeSeverity?: 'success' | 'warning' | 'info';
   loginEmail?: string;
   dialog?: 'login' | 'register';
   csrfReady: boolean;
 }
-export const initialState: AuthState = { isLoggedIn: false, initializing: true, csrfReady: false };
+export const initialState: AuthState = { isLoggedIn: false, initializing: true, csrfReady: false, errorVersion: 0 };
 const authSlice = createSlice({ name: 'auth', initialState, reducers: {
   login(state, _action: PayloadAction<LoginPayload>) { state.pending = 'login'; state.error = undefined; state.notice = undefined; },
   register(state, _action: PayloadAction<RegisterPayload>) { state.pending = 'register'; state.error = undefined; },
@@ -38,7 +39,7 @@ const authSlice = createSlice({ name: 'auth', initialState, reducers: {
     state.currentUser = undefined; state.isLoggedIn = false;
     state.pending = 'refresh'; state.notice = 'You have successfully logged out.'; state.noticeSeverity = 'success';
   },
-  failed(state, action: PayloadAction<AuthFailure>) { state.pending = undefined; state.error = action.payload; },
+  failed(state, action: PayloadAction<AuthFailure>) { state.pending = undefined; state.error = action.payload; state.errorVersion += 1; },
   refreshed(state) { state.pending = undefined; state.notice = 'Security verification refreshed. Please submit again.'; state.noticeSeverity = 'info'; },
   sessionExpired(state) {
     const wasAuthenticated = state.isLoggedIn;
@@ -52,6 +53,10 @@ const authSlice = createSlice({ name: 'auth', initialState, reducers: {
     state.dialog = 'login'; state.loginEmail = action.payload; state.error = undefined; state.notice = undefined;
   },
   closeDialog(state) { if (!state.pending) { state.dialog = undefined; state.error = undefined; state.notice = undefined; } },
+  clearFieldError(state, action: PayloadAction<AuthField>) {
+    if (state.error?.fields) delete state.error.fields[action.payload];
+  },
+  dismissNotice(state) { state.notice = undefined; },
   dismissFeedback(state) { state.error = undefined; state.notice = undefined; },
 } });
 export const authActions = authSlice.actions;

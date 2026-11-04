@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { AuthFailure, LoginPayload, RegisterPayload, UserProfile } from 'controllers/feature/auth/authModels';
-import { normalizeEmail } from 'controllers/feature/auth/authValidation';
+import { codePoints, isEmailCandidate, normalizeEmail } from 'controllers/feature/auth/authValidation';
 
 // Separate from the legacy commerce client. Cookies stay browser-managed; CSRF stays in memory.
 export function createAuthApi(http: AxiosInstance = axios.create({
@@ -36,8 +36,14 @@ export function createAuthApi(http: AxiosInstance = axios.create({
       for (const field of ['email', 'password', 'fullName'] as const) {
         if (data.errors && Object.prototype.hasOwnProperty.call(data.errors, field))
           safe.fields[field] = 'This field does not meet the documented requirements.';
-        if (Array.isArray(data.fieldErrors) && data.fieldErrors.some((item: { field?: string } | null) => item?.field === field))
-          safe.fields[field] = 'This field does not meet the documented requirements.';
+        const issue = Array.isArray(data.fieldErrors)
+          ? data.fieldErrors.find((item: { field?: string; code?: string } | null) => item?.field === field) : undefined;
+        const label = { email: 'Email address', password: 'Password', fullName: 'Full name' }[field];
+        if (issue?.code === 'REQUIRED') safe.fields[field] = `${label} is required.`;
+        else if (issue?.code === 'INVALID_FORMAT') safe.fields[field] = field === 'email'
+          ? 'Please enter a valid email address.' : `${label} has an invalid format.`;
+        else if (issue?.code === 'INVALID_VALUE') safe.fields[field] = `${label} does not meet the documented requirements.`;
+        else if (issue) safe.fields[field] = 'This field does not meet the documented requirements.';
       }
     }
     return safe;
@@ -71,7 +77,10 @@ export function createAuthApi(http: AxiosInstance = axios.create({
   }
   function profile(data: UserProfile): UserProfile {
     if (!data || typeof data !== 'object' || typeof data.id !== 'string' || typeof data.email !== 'string'
-      || typeof data.fullName !== 'string' || !Array.isArray(data.roles)
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id)
+      || !isEmailCandidate(data.email) || normalizeEmail(data.email) !== data.email || codePoints(data.email) > 254
+      || typeof data.fullName !== 'string' || !data.fullName.trim() || codePoints(data.fullName) > 50
+      || !Array.isArray(data.roles)
       || !data.roles.every(role => role === 'CUSTOMER' || role === 'ADMIN'))
       throw new Error('We could not confirm the result. Please try again when you are ready.');
     return { id: data.id, email: data.email, fullName: data.fullName, roles: data.roles };

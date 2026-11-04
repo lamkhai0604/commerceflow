@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { createAuthApi } from './authApi';
 
-const user = { id: 'id', email: 'customer@example.com', fullName: 'Customer', roles: ['CUSTOMER'] };
+const user = { id: '11111111-1111-4111-8111-111111111111', email: 'customer@example.com', fullName: 'Customer', roles: ['CUSTOMER'] };
 function setup() {
   let token = 0;
   const adapter = jest.fn(async (config: AxiosRequestConfig) => ({ config, headers: {}, status: config.url === '/auth/register' ? 201 : config.url === '/auth/logout' ? 204 : 200, statusText: 'OK',
@@ -96,4 +96,56 @@ test('unexpected successful logout response does not claim confirmed invalidatio
   const { api, adapter } = setup(); await api.bootstrap();
   adapter.mockResolvedValueOnce({ config: {}, headers: {}, status: 200, statusText: 'OK', data: '<html>proxy page</html>' } as never);
   await expect(api.logout()).rejects.toMatchObject({ message: 'We could not confirm the result. Please try again when you are ready.' });
+});
+
+test.each([
+  ['REQUIRED', 'Password is required.'],
+  ['INVALID_FORMAT', 'Password has an invalid format.'],
+  ['INVALID_VALUE', 'Password does not meet the documented requirements.'],
+  ['UNKNOWN', 'This field does not meet the documented requirements.'],
+])('safe field code %s', async (code, message) => {
+  const { api, adapter } = setup();
+  adapter.mockRejectedValueOnce(rejected(400, { code: 'VALIDATION_ERROR',
+    errors: { password: 'SECRET' }, fieldErrors: [{ field: 'password', code }, { field: 'injected', code: 'REQUIRED' }] }));
+  await expect(api.me()).rejects.toMatchObject({ fields: { password: message } });
+});
+test('email INVALID_FORMAT has field-specific copy', async () => {
+  const { api, adapter } = setup();
+  adapter.mockRejectedValueOnce(rejected(400, { code: 'VALIDATION_ERROR', fieldErrors: [{ field: 'email', code: 'INVALID_FORMAT' }] }));
+  await expect(api.me()).rejects.toMatchObject({ fields: { email: 'Please enter a valid email address.' } });
+});
+
+test.each([
+  { id: 'not-a-uuid' }, { email: 'invalid' }, { email: 'x'.repeat(243) + '@example.com' },
+  { email: ' USER@example.com ' }, { fullName: '😀'.repeat(51) }, { fullName: ' ' },
+  { fullName: null }, { roles: ['SUPERADMIN'] }, { roles: 'CUSTOMER' },
+])('rejects malformed profile %j', async invalid => {
+  const { api, adapter } = setup();
+  adapter.mockResolvedValueOnce({ config: {}, headers: {}, status: 200, statusText: 'OK', data: { ...user, ...invalid } } as never);
+  await expect(api.me()).rejects.toMatchObject({ message: 'We could not confirm the result. Please try again when you are ready.' });
+});
+test('profile keeps backend-compatible quoted email and Unicode boundary', async () => {
+  const { api, adapter } = setup();
+  const data = { ...user, email: '"a b"@example.com', fullName: '😀'.repeat(50), password: 'DO NOT RETAIN' };
+  adapter.mockResolvedValueOnce({ config: {}, headers: {}, status: 200, statusText: 'OK', data } as never);
+  await expect(api.me()).resolves.toEqual({ id: user.id, email: data.email, fullName: data.fullName, roles: user.roles });
+});
+
+test.each([{ code: 'UNKNOWN' }, '<html>Unauthorized</html>', {}])('characterizes unknown/non-JSON 401 notification without changing policy: %j', async body => {
+  const { api, adapter } = setup(); const listener = jest.fn(); api.onSessionExpired(listener);
+  adapter.mockRejectedValueOnce(rejected(401, body)); await api.me().catch(() => undefined);
+  expect(listener).not.toHaveBeenCalled();
+});
+test('characterizes credential failure without identity expiry', async () => {
+  const { api, adapter } = setup(); const listener = jest.fn(); api.onSessionExpired(listener); await api.bootstrap();
+  adapter.mockRejectedValueOnce(rejected(401, { code: 'INVALID_CREDENTIALS' }));
+  await expect(api.login({ email: user.email, password: 'wrong' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+  expect(listener).not.toHaveBeenCalled();
+});
+
+test('characterizes current generic notifier even for unusual login UNAUTHENTICATED', async () => {
+  const { api, adapter } = setup(); const listener = jest.fn(); api.onSessionExpired(listener); await api.bootstrap();
+  adapter.mockRejectedValueOnce(rejected(401, { code: 'UNAUTHENTICATED' }));
+  await api.login({ email: user.email, password: 'wrong' }).catch(() => undefined);
+  expect(listener).toHaveBeenCalledTimes(1); // characterization, not the proposed context-aware policy
 });
