@@ -1,0 +1,84 @@
+{
+  "offlinePublicAssets": true,
+  "status": "FAIL",
+  "tests": [
+    {
+      "id": "E2E-07",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-08",
+      "kind": "REAL_BACKEND",
+      "status": "FAIL",
+      "failure": "MULTIPLE_CORRELATION_HEADERS"
+    },
+    {
+      "id": "E2E-09",
+      "kind": "REAL_BACKEND",
+      "status": "FAIL",
+      "failure": "MULTIPLE_CORRELATION_HEADERS"
+    },
+    {
+      "id": "E2E-10",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-11",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-12",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-13",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-14",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-15",
+      "kind": "CONTROLLED_SYNTHETIC",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-01",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-02",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-03",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-04",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-05",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    },
+    {
+      "id": "E2E-06",
+      "kind": "REAL_BACKEND",
+      "status": "PASS"
+    }
+  ],
+  "requiredTestsSkipped": 0
+}

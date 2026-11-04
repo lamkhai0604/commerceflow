@@ -166,3 +166,10 @@ and always cleans up. It never deploys. Existing CI workflows are unchanged.
 Open a Draft PR to develop with actual results and limitations; request Gemini
 independent review. Stop implementation after opening it and await review/owner
 merge authorization. Windows Docker Desktop/browser acceptance remains separate.
+
+## Actual execution evidence
+
+See [EXECUTION-REPORT.md](EXECUTION-REPORT.md): frontend 90 PASS, backend 49 PASS,
+lifecycle safety 5 PASS; HTTPS matrix 13 PASS / 2 FAIL / 0 SKIPPED. Acceptance is
+blocked by [duplicate backend correlation headers](CORRELATION-CORRECTION-REQUEST.md).
+Both Chromium certificate gates passed; no backend fix is included.
