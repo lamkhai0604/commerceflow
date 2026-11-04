@@ -39,7 +39,7 @@ public final class ApiProblemFactory {
         var headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
         headers.setCacheControl("no-store");
-        headers.set("X-Request-ID", RequestCorrelationFilter.requestId(request));
+        // RequestCorrelationFilter owns the MVC correlation header; adding it here duplicates it.
         return headers;
     }
 

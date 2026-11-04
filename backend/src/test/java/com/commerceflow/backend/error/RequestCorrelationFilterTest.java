@@ -10,7 +10,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.*;
 
 class RequestCorrelationFilterTest {
-    final RequestCorrelationFilter filter = new RequestCorrelationFilter(new ObjectMapper());
+    // Match Spring MVC's ProblemDetail serialization for extension fields.
+    final ObjectMapper mapper = new ObjectMapper().addMixIn(org.springframework.http.ProblemDetail.class,
+            org.springframework.http.converter.json.ProblemDetailJacksonMixin.class);
+    final RequestCorrelationFilter filter = new RequestCorrelationFilter(mapper);
 
     @Test
     void ignoresIncomingIdReusesDispatchIdAndClearsMdc() throws Exception {
@@ -33,6 +36,11 @@ class RequestCorrelationFilterTest {
             filter.doFilter(new MockHttpServletRequest(), response, (req, res) -> { throw new IllegalStateException("password=private"); });
             assertThat(response.getStatus()).isEqualTo(500);
             assertThat(response.getContentAsString()).contains("INTERNAL_ERROR").doesNotContain("password=private");
+            var body = mapper.readTree(response.getContentAsString());
+            String id = body.get("requestId").asText();
+            UUID.fromString(id);
+            assertThat(response.getHeaders("X-Request-ID")).containsExactly(id);
+            assertThat(body.get("instance").asText()).isEqualTo("urn:uuid:" + id);
             assertThat(MDC.get("requestId")).isEqualTo("outer");
         } finally { MDC.clear(); }
     }
