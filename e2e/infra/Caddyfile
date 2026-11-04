@@ -1,0 +1,16 @@
+{
+	auto_https off
+	admin off
+}
+https://localhost:8443 {
+	tls /certs/server.crt /certs/server.key
+	@api path /api/v1 /api/v1/*
+	handle @api {
+		reverse_proxy backend:8080
+	}
+	handle {
+		root * /site
+		try_files {path} /index.html
+		file_server
+	}
+}

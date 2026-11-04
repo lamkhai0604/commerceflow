@@ -45,7 +45,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
-    "lint:auth": "eslint src/controllers/api/authApi.ts src/controllers/api/authApi.test.ts src/controllers/feature/auth src/controllers/app/store.ts src/view/components/layout/AuthDialog src/view/components/layout/LoginModal src/view/components/layout/RegisterModal src/view/components/layout/Header/Dropdown --max-warnings=0"
+    "lint:auth": "eslint src/controllers/api/authApi.ts src/controllers/api/authApi.test.ts src/controllers/feature/auth src/controllers/app/store.ts src/view/components/layout/AuthDialog src/view/components/layout/LoginModal src/view/components/layout/RegisterModal src/view/components/layout/Header/Dropdown --max-warnings=0",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "typecheck:e2e": "tsc --noEmit -p e2e/tsconfig.json",
+    "lint:e2e": "eslint e2e --ext .ts,.cjs --max-warnings=0",
+    "test:e2e:infra": "node --test --test-isolation=none e2e/support/lifecycle.test.cjs"
   },
   "eslintConfig": {
     "extends": [
@@ -66,8 +70,11 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/bootstrap": "^5.1.9",
+    "@types/pg": "8.15.6",
     "@types/uuid": "^8.3.4",
-    "file-loader": "^6.2.0"
+    "file-loader": "^6.2.0",
+    "pg": "8.16.3"
   }
 }
