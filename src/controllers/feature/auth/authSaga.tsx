@@ -1,56 +1,68 @@
-import { PayloadAction } from '@reduxjs/toolkit';
-import userApi from 'controllers/api/userApi';
-import { ListResponse } from 'models';
-import { IUser } from 'models/types/user';
-import { call, delay, fork, put, take } from 'redux-saga/effects';
-import { authActions, LoginPayload } from './authSlice';
+import { AnyAction } from 'redux';
+import { eventChannel, SagaIterator } from 'redux-saga';
+import { call, fork, put, take, takeLeading } from 'redux-saga/effects';
+import authApi from 'controllers/api/authApi';
+import { AuthFailure, UserProfile } from './authModels';
+import { authActions } from './authSlice';
 
-function* handleLogin(payload: LoginPayload) {
+function safeFailure(error: unknown): AuthFailure {
+  // Only the dedicated client produces safe public feedback. Never log original Axios errors/configs.
+  if (error && typeof error === 'object' && 'message' in error) {
+    const safe = error as AuthFailure;
+    return { message: safe.message, status: safe.status, code: safe.code, fields: safe.fields };
+  }
+  return { message: 'We could not confirm the result. Please try again when you are ready.' };
+}
+export function* refreshSecurity(): SagaIterator {
+  yield put(authActions.csrfReady(false));
+  try { yield call(authApi.bootstrap); yield put(authActions.csrfReady(true)); }
+  catch { yield put(authActions.csrfReady(false)); }
+  yield put(authActions.securitySettled());
+}
+export function* restoreSession(): SagaIterator {
+  let profile: UserProfile | undefined;
+  let failure: AuthFailure | undefined;
+  try { profile = yield call(authApi.me); }
+  catch (error) { if ((error as AuthFailure)?.status !== 401) failure = safeFailure(error); }
+  // Keep startup controls disabled until the watcher is ready to accept mutations.
+  yield call(refreshSecurity);
+  yield put(authActions.restored(profile));
+  if (failure) yield put(authActions.failed(failure));
+}
+export function* runAuthOperation(action: AnyAction): SagaIterator {
   try {
-    const res: ListResponse<IUser> = yield call(userApi.getUserList, {
-      _page: 1,
-      _limit: 10,
-    });
-    let newArr = res.data.filter((user) => user.email === payload.email && user.password === payload.password);
-    let user = {
-      id: newArr[0].id,
-      email: newArr[0].email,
-      firstName: newArr[0].firstName,
-      lastName: newArr[0].lastName,
-      phone: newArr[0].phone,
-      password: newArr[0].password,
-      createdAt: newArr[0].createdAt,
-      updatedAt: newArr[0].updatedAt,
-    };
-
-    localStorage.setItem('access_token', user.id);
-    yield put(authActions.loginSuccess(user))
-    //redirect to admin page
-  } catch (err) {
-    console.log("failed")
-    yield put(authActions.loginFailed('Failed to login'));
-  }
-}
-
-function* handleLogout() {
-  yield delay(1000);
-  localStorage.removeItem('access_token');
-  //redirect back to login page
-}
-
-function* watchLoginFlow() {
-  while (true) {
-    const isLoggedIn = Boolean(localStorage.getItem('access_token'));
-    if (!isLoggedIn) {
-      const action: PayloadAction<LoginPayload> = yield take(authActions.login.type);
-      yield fork(handleLogin, action.payload);
+    if (authActions.login.match(action)) {
+      const profile: UserProfile = yield call(authApi.login, action.payload);
+      yield put(authActions.loginSuccess(profile));
+      yield call(refreshSecurity);
+    } else if (authActions.register.match(action)) {
+      const profile: UserProfile = yield call(authApi.register, action.payload);
+      yield put(authActions.registered(profile.email));
+    } else if (authActions.logout.match(action)) {
+      yield call(authApi.logout);
+      yield put(authActions.loggedOut());
+      yield call(refreshSecurity);
+    } else if (authActions.refreshCsrf.match(action)) {
+      yield call(authApi.bootstrap);
+      yield put(authActions.csrfReady(true));
+      yield put(authActions.refreshed());
     }
-
-    yield take(authActions.logout.type);
-    yield call(handleLogout);
+  } catch (error) {
+    const failure = safeFailure(error);
+    if (failure.code === 'CSRF_INVALID' && failure.status === 403) yield put(authActions.csrfReady(false));
+    if (action.type === authActions.logout.type && failure.status === 401) yield put(authActions.sessionExpired());
+    yield put(authActions.failed(failure));
   }
 }
-
-export default function* authSaga() {
-  yield fork(watchLoginFlow);
+function* watchExpiry(): SagaIterator {
+  const channel = eventChannel<boolean>(emit => authApi.onSessionExpired(() => emit(true)));
+  try { while (true) { yield take(channel); yield put(authActions.sessionExpired()); } }
+  finally { channel.close(); }
+}
+export default function* authSaga(): SagaIterator {
+  yield fork(watchExpiry);
+  yield call(restoreSession);
+  // Serialize mutations. A second click never cancels/replays an in-flight write.
+  yield takeLeading([authActions.login.type, authActions.register.type, authActions.logout.type,
+    authActions.refreshCsrf.type], runAuthOperation);
 }
