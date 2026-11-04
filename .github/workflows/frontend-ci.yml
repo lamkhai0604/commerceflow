@@ -1,0 +1,40 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - 'index.d.ts'
+      - '.github/workflows/frontend-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Node 24 frontend validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Clean dependency installation
+        run: npm ci
+      - name: Application and test TypeScript checks
+        run: npm run typecheck
+      - name: Authentication scope ESLint
+        run: npm run lint:auth
+      - name: All frontend Jest tests
+        run: npm test -- --watchAll=false --runInBand
+      - name: Production build
+        run: npm run build

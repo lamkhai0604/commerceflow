@@ -43,7 +43,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
+    "lint:auth": "eslint src/controllers/api/authApi.ts src/controllers/api/authApi.test.ts src/controllers/feature/auth src/controllers/app/store.ts src/view/components/layout/AuthDialog src/view/components/layout/LoginModal src/view/components/layout/RegisterModal src/view/components/layout/Header/Dropdown --max-warnings=0"
   },
   "eslintConfig": {
     "extends": [
