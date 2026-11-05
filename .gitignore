@@ -21,7 +21,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local credentials (the existing tracked frontend .env is unaffected)
+# Ignore local environment files that may contain secrets; keep safe example files tracked.
 .env
 .env.*
 !.env.example
