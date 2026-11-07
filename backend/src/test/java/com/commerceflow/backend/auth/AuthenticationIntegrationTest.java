@@ -108,7 +108,7 @@ class AuthenticationIntegrationTest {
         assertThat(json(response).get("code").asText()).isNotBlank();
         String id = json(response).get("requestId").asText();
         UUID.fromString(id);
-        assertThat(response.headers().firstValue("X-Request-ID").orElseThrow()).isEqualTo(id);
+        assertThat(response.headers().allValues("X-Request-ID")).containsExactly(id);
         assertThat(json(response).get("instance").asText()).isEqualTo("urn:uuid:" + id);
     }
 

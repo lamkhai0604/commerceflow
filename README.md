@@ -44,3 +44,21 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+## Public project metadata
+
+- **author:** LamKhai
+- **shopname:** Hello
+- **github:** https://github.com/lamkhai0604/ecommerce-project
+
+## Local environment files
+
+Local `.env` files may contain secrets and must remain ignored. Safe
+`.env.example` files remain tracked; use placeholders and never commit actual
+credentials. The public metadata above is documentation, not runtime settings.
+
+**Collaborator warning:** this change stops tracking the root `.env`. A future
+pull may remove the formerly tracked file from another developer's working tree.
+Back up your local copy privately before pulling, then restore it as an ignored
+local file if needed. `git rm --cached -- .env` preserves the file in the working
+tree where that command is executed; it cannot preserve files in other clones.

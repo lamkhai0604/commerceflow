@@ -1,0 +1,87 @@
+name: HTTPS integration E2E
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - 'package*.json'
+      - 'tsconfig*.json'
+      - 'index.d.ts'
+      - '.github/workflows/integration-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      REACT_APP_AUTH_API_BASE_URL: /api/v1
+      E2E_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Frontend validation and production bundle
+        run: |
+          npm ci
+          npm run typecheck
+          npm run typecheck:e2e
+          npm run lint:auth
+          npm run lint:e2e
+          npm run test:e2e:infra
+          for script in e2e/scripts/*.sh; do bash -n "$script"; done
+          npm test -- --watchAll=false --runInBand
+          npm run build
+      - name: Backend and mandatory PostgreSQL tests
+        run: |
+          docker info > /dev/null
+          ./backend/mvnw -f backend/pom.xml -B clean verify
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          for suite, required in [('AuthenticationIntegrationTest',22), ('RegistrationConstraintsMigrationTest',3)]:
+              paths=list(Path('backend/target/surefire-reports').glob('TEST-*.'+suite+'.xml'))
+              if len(paths)!=1: raise SystemExit('Missing required PostgreSQL test suite')
+              root=ET.parse(paths[0]).getroot()
+              if int(root.get('tests','0'))<required or any(int(root.get(k,'0')) for k in ['skipped','failures','errors']):
+                  raise SystemExit('PostgreSQL tests must execute without skips/failures')
+          print('Mandatory PostgreSQL suites executed successfully')
+          PY
+      - name: Real HTTPS Chromium integration
+        run: bash e2e/scripts/run.sh "$E2E_ID"
+      - name: Always clean only this run
+        if: always()
+        run: bash e2e/scripts/cleanup.sh "$E2E_ID"
+      - name: Preserve sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitized-integration-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            e2e/.state/${{ env.E2E_ID }}/evidence/setup.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/tls-reject.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/tls-accept.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/summary.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/correlation.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/cleanup.json
+            e2e/.state/${{ env.E2E_ID }}/evidence/images.txt
+            e2e/.state/${{ env.E2E_ID }}/evidence/browser-version.txt

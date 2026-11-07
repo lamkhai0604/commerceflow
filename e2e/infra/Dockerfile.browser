@@ -1,0 +1,11 @@
+# Test runner only. No Playwright container registry, app source, credentials or CA baked in.
+FROM node:24-bookworm-slim
+RUN --mount=type=secret,id=proxy_ca \
+    if [ -f /run/secrets/proxy_ca ]; then \
+      apt-get -o Acquire::https::CaInfo=/run/secrets/proxy_ca update && \
+      apt-get -o Acquire::https::CaInfo=/run/secrets/proxy_ca install -y --no-install-recommends chromium libnss3-tools curl ca-certificates openssl; \
+    else \
+      apt-get update && apt-get install -y --no-install-recommends chromium libnss3-tools curl ca-certificates openssl; \
+    fi && rm -rf /var/lib/apt/lists/*
+WORKDIR /work
+ENTRYPOINT ["bash", "/work/e2e/scripts/browser.sh"]
