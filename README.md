@@ -1,64 +1,100 @@
-# Getting Started with Create React App
+# CommerceFlow
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An e-commerce web application: a React storefront and a Java Spring Boot backend with PostgreSQL, built sprint by sprint with a written design baseline, change control and automated tests.
 
-## Available Scripts
+**Status:** Sprint 1C complete. Session authentication (register, log in, log out, roles) works end to end behind HTTPS and is covered by unit, integration and real-browser tests. The storefront pages (catalog, cart, checkout) still use the legacy client and a mock data API; connecting them to the backend and implementing checkout come next.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+| Area | Status |
+| --- | --- |
+| Storefront UI: home, featured and recommended products, cart, checkout pages | Built (legacy data source) |
+| Registration, login, logout, session restoration | Done (Sprint 1B) |
+| Role-based access (CUSTOMER, ADMIN) | Done (Sprint 1B) |
+| CSRF protection, secure session cookie, session rotation | Done (Sprint 1B) |
+| HTTPS same-origin integration and E2E tests | Done (Sprint 1C) |
+| Product catalog API, cart, idempotent checkout, mock payment, order cancellation | Designed (Sprint 1A), not implemented |
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Tech stack
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+| Layer | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Redux Toolkit, Redux-Saga, MUI, Axios |
+| Backend | Java 21, Spring Boot 3.5, Spring Security, Spring Session JDBC, Spring Data JPA |
+| Database | PostgreSQL 17, Flyway migrations |
+| Testing | Jest and React Testing Library; JUnit 5 with Testcontainers; Playwright with Chromium over HTTPS |
+| Infrastructure | Docker Compose, Caddy (HTTPS reverse proxy for integration tests), GitHub Actions |
 
-### `npm test`
+## Architecture
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```mermaid
+flowchart LR
+  B[Browser] -->|HTTPS, same origin| P[Reverse proxy]
+  P -->|static files| F[React build]
+  P -->|/api/v1| S[Spring Boot API]
+  S --> D[(PostgreSQL)]
+  S -.->|sessions| D
+```
 
-### `npm run build`
+Key decisions (session authentication, same-origin deployment, crash-safe idempotent checkout, mock payments) are listed in the [decision log](docs/DECISIONS.md).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Getting started
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Frontend
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Requires Node 24.
 
-### `npm run eject`
+```sh
+npm ci
+npm start                 # development server on http://localhost:3000
+npm run typecheck
+npm run lint:auth
+CI=true npm test -- --watchAll=false
+CI=true npm run build
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Backend
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Requires JDK 21 and Docker. See [backend/README.md](backend/README.md) for configuration.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```sh
+cd backend
+cp .env.example .env      # set a local database password
+docker compose --env-file .env up -d --wait
+./mvnw clean verify
+./mvnw spring-boot:run    # API on http://localhost:8080/api/v1
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### End-to-end tests (HTTPS)
 
-## Learn More
+Requires Linux Docker Engine with Compose v2. See the [runbook](docs/testing/e2e-https-integration.md).
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```sh
+npm run test:e2e:infra
+bash e2e/scripts/run.sh local-<unique-run-id>
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Continuous integration
 
-## Public project metadata
+| Workflow | Runs |
+| --- | --- |
+| `frontend-ci.yml` | Type check, lint, Jest tests and production build |
+| `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (15 scenarios) and guaranteed cleanup |
 
-- **author:** LamKhai
-- **shopname:** Hello
-- **github:** https://github.com/lamkhai0604/ecommerce-project
+## Documentation
+
+Start at [docs/README.md](docs/README.md): requirements, architecture, API contracts, test plans, sprint reports and the decision log.
+
+## Branches
+
+`develop` is the integration branch; `master` is protected and receives reviewed releases only. Work happens on `feature/*`, `fix/*` and `docs/*` branches through pull requests into `develop`.
 
 ## Local environment files
 
-Local `.env` files may contain secrets and must remain ignored. Safe
-`.env.example` files remain tracked; use placeholders and never commit actual
-credentials. The public metadata above is documentation, not runtime settings.
+`.env` files are ignored and must never be committed; `.env.example` files hold placeholders only.
 
-**Collaborator warning:** this change stops tracking the root `.env`. A future
-pull may remove the formerly tracked file from another developer's working tree.
-Back up your local copy privately before pulling, then restore it as an ignored
-local file if needed. `git rm --cached -- .env` preserves the file in the working
-tree where that command is executed; it cannot preserve files in other clones.
+## Project information
+
+- **Author:** Lam Khai
+- **Repository:** https://github.com/lamkhai0604/ecommerce-project
