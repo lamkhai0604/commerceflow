@@ -41,7 +41,7 @@ printf 'subjectAltName=DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth\n
 openssl x509 -req -in "$STATE/certs/server.csr" -CA "$STATE/certs/ca.crt" -CAkey "$STATE/certs/ca.key" -CAcreateserial -days 2 -out "$STATE/certs/server.crt" -extfile "$STATE/certs/server.ext" >> "$STATE/cert-generation.log" 2>&1
 STAGE=IMAGE_BUILD
 args=()
-if [[ -n "${CODEX_PROXY_CERT:-}" ]]; then args+=(--secret "id=proxy_ca,src=$CODEX_PROXY_CERT"); fi
+if [[ -n "${PROXY_CA_CERT:-}" ]]; then args+=(--secret "id=proxy_ca,src=$PROXY_CA_CERT"); fi
 BUILDX_CONFIG="$STATE/buildx" docker_cmd build "${args[@]}" --label "io.commerceflow.e2e.run=$RUN_ID" -t "cf-s1c-browser:$RUN_ID" -f "$ROOT/e2e/infra/Dockerfile.browser" "$ROOT/e2e/infra" > "$STATE/build.log" 2>&1
 STAGE=COMPOSE
 compose config --quiet

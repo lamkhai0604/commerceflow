@@ -1,8 +1,8 @@
 # Sprint 1B backend authentication
 
-Implemented against `docs/sprint-1a/final-baseline/README.md`, the accepted D3
+Implemented against the [Sprint 1A design baseline](../docs/architecture/design-baseline.md), the accepted D3
 decision, the SRS plus approved addendum, the physical ERD specification, and
-`05-API/openapi-v1.0-DESIGN-BASELINE.yaml`. OpenAPI's `/api/v1` server prefix
+[`openapi-v1.0-DESIGN-BASELINE.yaml`](../docs/api/openapi-v1.0-DESIGN-BASELINE.yaml). OpenAPI's `/api/v1` server prefix
 combines with `/auth/csrf` to give **GET /api/v1/auth/csrf**. D1/D2 checkout and
 payment work is not included. CR-02 frontend link removal and CR-03 frontend
 authentication changes are not included; existing frontend files are unchanged.
@@ -207,5 +207,5 @@ verified through the secured full application integration tests.
    claimed verified by these backend tests.
 
 Implementation is authorized, but the separate proposed OpenAPI revision and
-consumer compatibility remain review gates before merge/release. Gemini owns
-UI/UX documentation alignment; CR-02/CR-03 frontend work remains outside this PR.
+consumer compatibility remain review gates before merge/release. UI/UX
+documentation alignment and CR-02/CR-03 frontend work are tracked in Sprint 1B.
