@@ -147,3 +147,75 @@ test('secret deletion failure is reported and can be retried without losing evid
   fs.unlinkSync(fakeRm);
   assert.equal(f.run().status, 0);
 });
+
+// Startup fixtures have no host PATH fallback and stop at a fake port preflight.
+function startupFixture(t) {
+  const f = fixture(t), scripts = path.join(f.root, 'e2e/scripts'), bin = path.join(f.root, 'bin');
+  fs.copyFileSync(path.resolve('e2e/scripts/start.sh'), path.join(scripts, 'start.sh'));
+  for (const file of ['build/index.html', 'backend/target/backend-0.0.1-SNAPSHOT.jar']) {
+    fs.mkdirSync(path.dirname(path.join(f.root, file)), { recursive: true });
+    fs.writeFileSync(path.join(f.root, file), 'fixture');
+  }
+  fs.mkdirSync(bin);
+  // Only these utilities are exposed; Docker and Python are always fixture code.
+  for (const [name, source] of [['env', '/usr/bin/env'], ['dirname', '/usr/bin/dirname']]) fs.symlinkSync(source, path.join(bin, name));
+  fs.writeFileSync(path.join(bin, 'docker'), `#!${process.execPath}
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args.shift() !== '--host=unix:///var/run/docker.sock') process.exit(97);
+const op = args.join(' ');
+const allowed = ['info', 'ps -aq --filter label=com.docker.compose.project=cf-s1c-unit-startup', 'network ls -q --filter label=com.docker.compose.project=cf-s1c-unit-startup'];
+const stage = ['info', 'containers', 'networks'][allowed.indexOf(op)];
+fs.appendFileSync(process.env.CALL_LOG, (stage || 'unexpected') + '\\n');
+if (!stage) process.exit(97);
+if (stage === process.env.INVENTORY_STAGE) {
+  process.stdout.write(process.env.INVENTORY_OUTPUT);
+  process.stderr.write(process.env.INVENTORY_ERROR);
+  process.exit(Number(process.env.INVENTORY_EXIT));
+}
+`);
+  fs.writeFileSync(path.join(bin, 'python3'), `#!${process.execPath}
+require('node:fs').appendFileSync(process.env.CALL_LOG, 'port-preflight\\n');
+process.exit(91);
+`);
+  for (const name of ['docker', 'python3']) fs.chmodSync(path.join(bin, name), 0o700);
+  const log = path.join(f.root, 'calls');
+  const run = (stage, status, output = '', error = '') => {
+    fs.writeFileSync(log, '');
+    const result = spawnSync('/bin/bash', [path.join(scripts, 'start.sh'), 'unit-startup'], {
+      encoding: 'utf8', timeout: 5000,
+      env: { PATH: bin, CALL_LOG: log, INVENTORY_STAGE: stage, INVENTORY_EXIT: String(status), INVENTORY_OUTPUT: output, INVENTORY_ERROR: error },
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.signal, null);
+    assert.equal(fs.existsSync(path.join(f.root, 'e2e/.state')), false);
+    return { ...result, calls: fs.readFileSync(log, 'utf8').trim().split('\n') };
+  };
+  return { run };
+}
+for (const [id, stage, status, output, error] of [
+  ['B02-T01', 'containers', 73, '', ''],
+  ['B02-T02', 'containers', 73, 'synthetic-resource', ''],
+  ['B02-T03', 'containers', 73, '', 'synthetic-sensitive-diagnostic'],
+  ['B02-T04', 'containers', 0, 'synthetic-resource', ''],
+  ['B02-T05', 'networks', 73, '', ''],
+  ['B02-T06', 'networks', 73, 'synthetic-resource', ''],
+  ['B02-T07', 'networks', 73, '', 'synthetic-sensitive-diagnostic'],
+  ['B02-T08', 'networks', 0, 'synthetic-resource', ''],
+]) {
+  test(`${id}: startup ${stage} ${status ? 'inventory failure' : 'collision'} fails closed`, t => {
+    const f = startupFixture(t), result = f.run(stage, status, output, error);
+    assert.equal(result.status, 1);
+    assert.deepEqual(result.calls, stage === 'containers' ? ['info', 'containers'] : ['info', 'containers', 'networks']);
+    const diagnostic = result.stdout + result.stderr;
+    assert.match(diagnostic, status ? /inventory failed/ : stage === 'containers' ? /Project collision/ : /Network collision/);
+    if (status) assert.doesNotMatch(diagnostic, /collision/);
+    assert.doesNotMatch(diagnostic, /synthetic-resource|synthetic-sensitive-diagnostic/);
+    if (id === 'B02-T08') {
+      const empty = f.run('networks', 0);
+      assert.equal(empty.status, 91);
+      assert.deepEqual(empty.calls, ['info', 'containers', 'networks', 'port-preflight']);
+      assert.equal(empty.stdout + empty.stderr, '');
+    }
+  });
+}

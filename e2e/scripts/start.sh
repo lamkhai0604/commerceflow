@@ -5,8 +5,14 @@ RUN_ID=${1:?Supply a fresh run ID}; validate_id "$RUN_ID"
 STATE="$ROOT/e2e/.state/$RUN_ID"
 [[ -f "$ROOT/build/index.html" && -f "$ROOT/backend/target/backend-0.0.1-SNAPSHOT.jar" ]] || { echo 'Build frontend and backend first'; exit 1; }
 docker_cmd info > /dev/null
-[[ -z "$(docker_cmd ps -aq --filter "label=com.docker.compose.project=cf-s1c-$RUN_ID")" ]] || { echo 'Project collision'; exit 1; }
-[[ -z "$(docker_cmd network ls -q --filter "label=com.docker.compose.project=cf-s1c-$RUN_ID")" ]] || { echo 'Network collision'; exit 1; }
+if ! containers=$(docker_cmd ps -aq --filter "label=com.docker.compose.project=cf-s1c-$RUN_ID" 2>/dev/null); then
+  echo 'Container inventory failed' >&2; exit 1
+fi
+[[ -z "$containers" ]] || { echo 'Project collision'; exit 1; }
+if ! networks=$(docker_cmd network ls -q --filter "label=com.docker.compose.project=cf-s1c-$RUN_ID" 2>/dev/null); then
+  echo 'Network inventory failed' >&2; exit 1
+fi
+[[ -z "$networks" ]] || { echo 'Network collision'; exit 1; }
 python3 - <<'PY'
 import socket
 with socket.socket() as s: s.bind(('127.0.0.1',8443))
