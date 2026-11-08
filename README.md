@@ -2,7 +2,7 @@
 
 An e-commerce web application: a React storefront and a Java Spring Boot backend with PostgreSQL, built sprint by sprint with a written design baseline, change control and automated tests.
 
-**Status:** Sprint 1C released. Session authentication (register, log in, log out, roles) works end to end behind HTTPS and is covered by unit, integration and real-browser tests. Sprint 2 is replacing the original storefront, which reproduced a third-party theme, with an original responsive design; see the [current status](docs/STATUS.md).
+**Status:** Sprint 1C released. Session authentication (register, log in, log out, roles) works end to end behind HTTPS and is covered by unit, integration and real-browser tests. Sprint 2 replaced the original storefront, which reproduced a third-party theme, with an original responsive design on demonstration data; see the [current status](docs/STATUS.md).
 
 ## Features
 

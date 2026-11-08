@@ -20,7 +20,7 @@
 | [Sprint 1A](sprints/sprint-1a.md) | System design baseline | Done (diagram PDF parity open) |
 | [Sprint 1B](sprints/sprint-1b.md) | Session authentication, backend and frontend | Done |
 | [Sprint 1C](sprints/sprint-1c.md) | HTTPS integration and real-browser E2E | Released to `master` |
-| [Sprint 2](sprints/sprint-2.md) | Storefront cleanup and redesign | In progress |
+| [Sprint 2](sprints/sprint-2.md) | Storefront cleanup and redesign | Merged into `develop`; release pending |
 
 ## Document status labels
 
