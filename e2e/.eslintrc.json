@@ -1,6 +1,0 @@
-{
-  "env": { "node": true },
-  "rules": {
-    "testing-library/prefer-screen-queries": "off"
-  }
-}

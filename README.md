@@ -2,13 +2,13 @@
 
 An e-commerce web application: a React storefront and a Java Spring Boot backend with PostgreSQL, built sprint by sprint with a written design baseline, change control and automated tests.
 
-**Status:** Sprint 1C complete. Session authentication (register, log in, log out, roles) works end to end behind HTTPS and is covered by unit, integration and real-browser tests. The storefront pages (catalog, cart, checkout) still use the legacy client and a mock data API; connecting them to the backend and implementing checkout come next.
+**Status:** Sprint 1C released. Session authentication (register, log in, log out, roles) works end to end behind HTTPS and is covered by unit, integration and real-browser tests. Sprint 2 replaced the original storefront, which reproduced a third-party theme, with an original responsive design on demonstration data; see the [current status](docs/STATUS.md).
 
 ## Features
 
 | Area | Status |
 | --- | --- |
-| Storefront UI: home, featured and recommended products, cart, checkout pages | Built (legacy data source) |
+| Storefront UI: home, catalog with filters, product, cart and demo checkout, on demonstration data | Done (Sprint 2) |
 | Registration, login, logout, session restoration | Done (Sprint 1B) |
 | Role-based access (CUSTOMER, ADMIN) | Done (Sprint 1B) |
 | CSRF protection, secure session cookie, session rotation | Done (Sprint 1B) |
@@ -19,10 +19,10 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React, TypeScript, Redux Toolkit, Redux-Saga, MUI, Axios |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Router, Redux Toolkit, Redux-Saga, Axios |
 | Backend | Java 21, Spring Boot 3.5, Spring Security, Spring Session JDBC, Spring Data JPA |
 | Database | PostgreSQL 17, Flyway migrations |
-| Testing | Jest and React Testing Library; JUnit 5 with Testcontainers; Playwright with Chromium over HTTPS |
+| Testing | Vitest and React Testing Library; JUnit 5 with Testcontainers; Playwright with Chromium over HTTPS |
 | Infrastructure | Docker Compose, Caddy (HTTPS reverse proxy for integration tests), GitHub Actions |
 
 ## Architecture
@@ -42,15 +42,15 @@ Key decisions (session authentication, same-origin deployment, crash-safe idempo
 
 ### Frontend
 
-Requires Node 24.
+Requires Node 22.12 or later (CI uses Node 24).
 
 ```sh
 npm ci
-npm start                 # development server on http://localhost:3000
+npm run dev               # development server on http://localhost:3000; /api/v1 is proxied to :8080
 npm run typecheck
-npm run lint:auth
-CI=true npm test -- --watchAll=false
-CI=true npm run build
+npm run lint
+npm test
+npm run build             # output in build/
 ```
 
 ### Backend
@@ -78,13 +78,13 @@ bash e2e/scripts/run.sh local-<unique-run-id>
 
 | Workflow | Runs |
 | --- | --- |
-| `frontend-ci.yml` | Type check, lint, Jest tests and production build |
+| `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (15 scenarios) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (16 scenarios: authentication and the storefront flow) and guaranteed cleanup |
 
 ## Documentation
 
-Start at [docs/README.md](docs/README.md): requirements, architecture, API contracts, test plans, sprint reports and the decision log.
+Contributors start at [AGENTS.md](AGENTS.md). Project documentation starts at [docs/README.md](docs/README.md): requirements, architecture, API contracts, test plans, sprint reports and the decision log.
 
 ## Branches
 

@@ -6,10 +6,13 @@ on:
     paths:
       - 'src/**'
       - 'public/**'
+      - 'index.html'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig*.json'
-      - 'index.d.ts'
+      - 'vite.config.ts'
+      - 'eslint.config.js'
+      - 'vercel.json'
       - '.github/workflows/frontend-ci.yml'
 
 permissions:
@@ -30,11 +33,11 @@ jobs:
           cache: npm
       - name: Clean dependency installation
         run: npm ci
-      - name: Application and test TypeScript checks
+      - name: TypeScript checks
         run: npm run typecheck
-      - name: Authentication scope ESLint
-        run: npm run lint:auth
-      - name: All frontend Jest tests
-        run: npm test -- --watchAll=false --runInBand
+      - name: ESLint
+        run: npm run lint
+      - name: Unit and component tests (Vitest)
+        run: npm test
       - name: Production build
         run: npm run build

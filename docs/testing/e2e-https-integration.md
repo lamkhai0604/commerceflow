@@ -78,11 +78,11 @@ it does not download the previously blocked Playwright Docker image.
 npm ci
 npm run typecheck
 npm run typecheck:e2e
-npm run lint:auth
+npm run lint
 npm run lint:e2e
 npm run test:e2e:infra
-CI=true npm test -- --watchAll=false --runInBand
-REACT_APP_AUTH_API_BASE_URL=/api/v1 CI=true npm run build
+npm test
+VITE_API_BASE_URL=/api/v1 npm run build
 ./backend/mvnw -f backend/pom.xml clean verify
 npm run test:e2e -- --list
 bash e2e/scripts/run.sh local-<unique-run-id>
