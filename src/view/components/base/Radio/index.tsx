@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Radio, FormControlLabel, SxProps, Theme } from '@mui/material';
 import { grey } from '@mui/material/colors';
 

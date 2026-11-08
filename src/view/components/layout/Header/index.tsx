@@ -1,5 +1,4 @@
 import { Grid, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { Link } from 'react-router-dom';
 import CustomLink from 'view/components/base/CustomLink';
@@ -8,14 +7,6 @@ import Dropdown from './Dropdown';
 import './style.css';
 
 const Header = () => {
-  const [headerStyle, setHeaderStyle] = useState<string>('');
-
-  useEffect(() => {
-    document.addEventListener('scroll', () => {
-      setHeaderStyle(() => (window.scrollY > 400 ? 'scroll-nav' : ''));
-    });
-  }, []);
-
   return (
     <Grid container spacing={12}>
       <Grid item xs={4} sx={{ textAlign: 'center', margin: 'auto' }}>

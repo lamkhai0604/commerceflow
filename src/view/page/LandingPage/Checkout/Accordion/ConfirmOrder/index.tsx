@@ -1,9 +1,8 @@
-import { useAppDispatch, useAppSelector } from 'controllers/app/hooks';
+import { useAppSelector } from 'controllers/app/hooks';
 import { getCartItems, getTotalAmount } from 'controllers/feature/product/productSlice';
 
 const ConfirmOrder = () => {
   //Redux
-  const dispatch = useAppDispatch();
   const CartItems = useAppSelector(getCartItems);
   const totalAmount = useAppSelector(getTotalAmount);
   return (

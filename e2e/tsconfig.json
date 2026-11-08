@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "target": "es2020", "types": ["node"], "module": "commonjs" },
+  "include": ["**/*.ts"],
+  "exclude": [".state"]
+}

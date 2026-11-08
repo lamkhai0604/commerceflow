@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from 'controllers/app/hooks';
 import { categoriesActions, getCategoryById } from 'controllers/feature/categories/categoriesSlice';
 import { getProductById, productActions } from 'controllers/feature/product/productSlice';
 import { ICartItem } from 'models';
-import { FormEvent, MutableRefObject, useEffect, useRef, useState } from 'react';
+import { FormEvent, MutableRefObject, useEffect, useRef } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { useParams } from 'react-router-dom';
 import Button from 'view/components/base/Button';
@@ -22,8 +22,6 @@ const ProductItem = () => {
   const dispatch = useAppDispatch();
   const ProductItem = useAppSelector(getProductById);
   const CategoryItem = useAppSelector(getCategoryById);
-  //State
-  const [isValid, setIsValid] = useState<boolean>(true);
   //Ref
   const amountInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
 
@@ -41,7 +39,6 @@ const ProductItem = () => {
     const enteredValue = amountInputRef.current.value;
     const enteredValueNumber = +enteredValue;
     if (enteredValue.trim().length === 0 || enteredValueNumber < 1 || enteredValueNumber > 100) {
-      setIsValid(false);
       return;
     }
     let item = {

@@ -1,12 +1,7 @@
-import { Link } from 'react-router-dom';
 import Button from 'view/components/base/Button';
 import Divider from 'view/components/base/Divider';
 import Input from 'view/components/base/Input';
 import './style.css';
-
-interface ICheckoutProps {
-  doNextStep: (id: string) => void;
-}
 
 const AccountBill = () => {
 

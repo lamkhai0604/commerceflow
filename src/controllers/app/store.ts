@@ -1,3 +1,4 @@
+import { sanitizeAuthAction } from 'controllers/feature/auth/authDevTools';
 import { configureStore, ThunkAction, Action, combineReducers } from '@reduxjs/toolkit';
 import createSagaMiddleware from 'redux-saga';
 import rootSaga from './rootSaga';
@@ -17,6 +18,10 @@ const sagaMiddleware = createSagaMiddleware()
 
 export const store = configureStore({
   reducer: rootReducer,
+  devTools: process.env.NODE_ENV !== 'production' ? {
+    // Credential actions must never be retained in Redux DevTools history.
+    actionSanitizer: sanitizeAuthAction,
+  } : false,
   middleware: (getDefaultMiddleware) =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
     getDefaultMiddleware().concat(sagaMiddleware),

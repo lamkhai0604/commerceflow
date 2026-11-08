@@ -1,0 +1,44 @@
+{
+  "result": "PASS",
+  "environment": "Linux Chromium; local HTTP; synthetic mocked API, not HTTPS/backend E2E",
+  "calls": [
+    {
+      "path": "/api/v1/auth/me",
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/auth/register",
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/login",
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/auth/logout",
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "method": "GET"
+    }
+  ],
+  "storageKeys": {
+    "local": [],
+    "session": []
+  },
+  "screenshots": 2,
+  "notes": [
+    "Mocked API/font CSS; not HTTPS/backend cookie acceptance.",
+    "Corrective UI: independent password visibility, field recovery and responsive Snackbar.",
+    "Existing template jQuery error/external assets remain outside scope."
+  ]
+}

@@ -1,5 +1,4 @@
-import no_image from 'assets/images/no_img.png';
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import Popup from './Popup';
 import StarRating from './StarRating';
 import Card from '@mui/material/Card';
@@ -29,14 +28,11 @@ interface IProductCardProps {
 }
 
 export default function ProductCard(props: IProductCardProps) {
-  const [showPopup, setIShowpopup] = useState<string>('');
-
   return (
     <Link to={`product/${props.id}?name=${props.name}`} style={{textDecoration: 'none'}}>
     <Card sx={CardPage}>
       <CardMedia component="img" width="270" height="360" image={props.imgUrl} alt={props.name} />
-      {/* {showPopup && <Popup clsName={showPopup} />} */}
-      <Popup clsName={showPopup} />
+      <Popup clsName="" />
       <CardContent>
         <StarRating starRating={props.starRating} />
         <LinkMui href={`product/${props.id}?name=${props.name}`} sx={{textDecoration: 'none'}}>

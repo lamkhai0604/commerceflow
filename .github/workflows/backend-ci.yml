@@ -1,0 +1,65 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Java 21 build and PostgreSQL tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 and Maven cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: |
+            backend/pom.xml
+            backend/.mvn/wrapper/maven-wrapper.properties
+
+      - name: Require Docker for PostgreSQL integration tests
+        run: docker info > /dev/null
+
+      - name: Build and test with Maven Wrapper
+        run: ./mvnw clean verify
+
+      - name: Require executed PostgreSQL integration tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          report = Path('target/surefire-reports/TEST-com.commerceflow.backend.ApplicationIntegrationTest.xml')
+          if not report.is_file():
+              raise SystemExit('Missing PostgreSQL integration test report')
+          suite = ET.parse(report).getroot()
+          expected = {
+              'servesHealthOverHttp',
+              'actuatorReportsDatabaseHealthWithoutDetails',
+              'appliesFlywayMigrationToPostgres',
+          }
+          cases = suite.findall('testcase')
+          if not expected.issubset({case.get('name') for case in cases}):
+              raise SystemExit('Required PostgreSQL integration tests did not execute')
+          for attribute in ('skipped', 'failures', 'errors'):
+              if int(suite.get(attribute, '0')) != 0:
+                  raise SystemExit(f'PostgreSQL integration tests reported {attribute}')
+          if any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')):
+              raise SystemExit('PostgreSQL integration tests must all pass without skips')
+          print(f'Confirmed {len(cases)} PostgreSQL integration tests passed without skips')
+          PY
