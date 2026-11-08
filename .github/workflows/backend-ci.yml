@@ -62,4 +62,13 @@ jobs:
           if any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')):
               raise SystemExit('PostgreSQL integration tests must all pass without skips')
           print(f'Confirmed {len(cases)} PostgreSQL integration tests passed without skips')
+
+          for name, minimum in [('auth.AuthenticationIntegrationTest', 22), ('catalog.CatalogIntegrationTest', 6)]:
+              path = Path(f'target/surefire-reports/TEST-com.commerceflow.backend.{name}.xml')
+              if not path.is_file():
+                  raise SystemExit(f'Missing required PostgreSQL suite {name}')
+              root = ET.parse(path).getroot()
+              if int(root.get('tests', '0')) < minimum or any(int(root.get(k, '0')) for k in ('skipped', 'failures', 'errors')):
+                  raise SystemExit(f'{name} must run at least {minimum} tests without skips or failures')
+              print(f'Confirmed {name}: {root.get("tests")} tests passed')
           PY

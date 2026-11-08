@@ -4,7 +4,7 @@
 
 | Branch | Purpose |
 | --- | --- |
-| `master` | Production. Vercel deploys it. Changes arrive only through a `develop → master` release pull request merged by the Product Owner |
+| `master` | Production. Vercel deploys the storefront and Render deploys the API from it ([deployment](DEPLOYMENT.md)). Changes arrive only through a `develop → master` release pull request merged by the Product Owner |
 | `develop` | Integration. Every feature pull request targets it |
 | `feature/<sprint>-<topic>`, `fix/<topic>`, `docs/<topic>` | One coherent change per branch and pull request |
 

@@ -1,0 +1,238 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow Catalog API
+  version: 1.2.0
+  description: Approved catalog contract (CR-S3-01, Product Owner, 2026-11-08). Supersedes
+    the catalog paths and the public Product and Category schemas of the v1.0 design
+    baseline; everything else in v1.0 is unchanged.
+servers:
+- url: /api/v1
+paths:
+  /products:
+    get:
+      tags:
+      - Catalog
+      summary: Browse and search active products
+      security: []
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 120
+      - name: category
+        in: query
+        schema:
+          type: string
+        description: Category slug.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        schema:
+          type: string
+          enum:
+          - name,asc
+          - name,desc
+          - price,asc
+          - price,desc
+      - name: minPrice
+        in: query
+        description: Inclusive lower price bound (CR-S3-01).
+        schema:
+          $ref: '#/components/schemas/Money'
+      - name: maxPrice
+        in: query
+        description: Inclusive upper price bound (CR-S3-01).
+        schema:
+          $ref: '#/components/schemas/Money'
+      - name: available
+        in: query
+        description: When true, only products that can be bought now (CR-S3-01).
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Paginated product listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      description: Without `sort`, products are returned in catalog display order.
+        `q` matches product name, description and category name, case-insensitively.
+  /categories:
+    get:
+      tags:
+      - Catalog
+      summary: List product categories
+      security: []
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /products/{productIdOrSlug}:
+    get:
+      tags:
+      - Catalog
+      summary: View active product details
+      security: []
+      parameters:
+      - name: productIdOrSlug
+        in: path
+        required: true
+        description: Product UUID or slug (CR-S3-01).
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  schemas:
+    Money:
+      type: string
+      pattern: ^[0-9]+[.][0-9]{2}$
+      example: '89.99'
+      description: USD decimal amount represented as a string.
+    Category:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - productCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        productCount:
+          type: integer
+          minimum: 0
+          description: Active products in the category (CR-S3-01).
+    Product:
+      type: object
+      required:
+      - available
+      - currency
+      - details
+      - id
+      - imageAlt
+      - imageUrl
+      - name
+      - price
+      - slug
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        price:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+          const: USD
+        available:
+          type: boolean
+        slug:
+          type: string
+        imageUrl:
+          type: string
+          description: Site-relative base path; `-480.webp` and `-960.webp` variants
+            exist (CR-S3-01).
+          example: /images/products/stoneware-mug
+        imageAlt:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+    ProductPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          minimum: 0
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      properties:
+        type:
+          type: string
+          example: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable application error code (e.g. IDEMPOTENCY_IN_PROGRESS,
+            IDEMPOTENCY_PAYLOAD_MISMATCH, INSUFFICIENT_INVENTORY).
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource not found or not visible to caller
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

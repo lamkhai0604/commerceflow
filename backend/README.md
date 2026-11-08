@@ -1,7 +1,9 @@
 # CommerceFlow backend
 
-Independent Java 21 / Spring Boot 3.5.16 service. The existing React frontend
-continues to run separately and is not wired to this service in Sprint 0.
+Java 21 / Spring Boot 3.5.16 service behind the storefront's `/api/v1` path.
+It serves authentication and the public catalog (`GET /categories`, `GET /products`,
+`GET /products/{idOrSlug}`; see `docs/api/openapi-v1.2-catalog.yaml`). Hosting is
+described in [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md); `Dockerfile` builds the image.
 Dependencies include Web, Data JPA, Validation, PostgreSQL, Flyway, and Actuator.
 Authentication uses Spring Security and PostgreSQL-backed Spring Session JDBC.
 See [Authentication](AUTHENTICATION.md) for the contract, security settings,

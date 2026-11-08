@@ -4,22 +4,21 @@ Updated: 2026-11-08
 
 | Field | Value |
 | --- | --- |
-| Production (`master`) | `a02d7c5` — Sprint 1C release (authentication foundation) |
-| Integration (`develop`) | `0d836f2` — Sprint 2 storefront (PRs #21 and #22) |
-| Active sprint | [Sprint 2 — Storefront cleanup and redesign](sprints/sprint-2.md) |
-| Active branch | none; Sprint 2 awaits release into `master` |
+| Production (`master`) | `16794a3` — Sprint 2 release (redesigned storefront on demonstration data) |
+| Integration (`develop`) | `a86460e` |
+| Active sprint | [Sprint 3 — Catalog API and hosted backend](sprints/sprint-3.md) |
+| Active branch | `feature/sprint-3-catalog-api` (S3-T01 to S3-T06) |
 
-## Completed in Sprint 2
+## Completed in the active branch
 
-- Design system components, demonstration catalog with licensed images, redesigned home, listing and product pages, cart drawer and page, demo checkout with confirmation, authentication UI without MUI, error boundary, E2E-16 storefront flow.
-- Verification (local, Node 22.23): typecheck, ESLint, 121 Vitest tests, production build, browser checks at 1280 px and 375 px, Lighthouse mobile (performance 93, accessibility 100), E2E-16 against the local production build. The HTTPS E2E suite runs in CI.
+- Catalog schema and seed migrations, public catalog endpoints, frontend catalog over HTTP with wake-up handling, deployment assets and guide.
+- Verification is listed in the sprint plan's progress notes.
 
 ## Known limitations
 
-- Catalog, cart and checkout use demonstration data in the browser; no order is created on a server.
-- No backend is hosted for the Vercel deployment, so sign-in on Vercel cannot complete. Backend hosting is the first item of the next sprint.
-- Product variants shown in the design review are not implemented (not in the API baseline).
+- Until the Product Owner creates the Render and Neon services (S3-T07), the production site has no API: the catalog shows its load-error state and sign-in cannot complete.
+- Cart and checkout still run in the browser (server-side cart and orders are the next sprint).
 
 ## Next action
 
-The Product Owner reviews and merges the Sprint 2 release pull request (`develop` → `master`). Next sprint: host the backend and database on free tiers, route `/api/v1` from Vercel, and replace the demonstration catalog with the catalog API.
+Merge the Sprint 3 pull request into `develop` after CI passes and open the release pull request. After the Product Owner merges it, create the Neon and Render services following [DEPLOYMENT.md](DEPLOYMENT.md) and verify the live site.

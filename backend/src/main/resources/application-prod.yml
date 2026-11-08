@@ -1,0 +1,18 @@
+# Hosted environment (S3-D01). Connection settings come from the platform's environment:
+# SPRING_DATASOURCE_URL (jdbc:postgresql://<host>/<database>?sslmode=require, direct connection),
+# POSTGRES_USER and POSTGRES_PASSWORD. Nothing secret is stored in this file.
+spring:
+  datasource:
+    hikari:
+      # Free database plans allow few connections; a small pool also limits memory.
+      maximum-pool-size: 4
+      minimum-idle: 1
+      connection-timeout: 20000
+  main:
+    lazy-initialization: false
+server:
+  shutdown: graceful
+  servlet:
+    session:
+      cookie:
+        secure: true

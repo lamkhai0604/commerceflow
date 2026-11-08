@@ -1,57 +1,67 @@
-import { toCents } from '@/lib/money';
-import { getProduct, listCategories, listProducts, listRelated } from './catalogApi';
-import { DEMO_PRODUCTS } from './demoData';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
+import { createCatalogApi } from './catalogApi';
 
-test('first page holds nine products and reports the full total', async () => {
-  const page = await listProducts();
-  expect(page).toMatchObject({ page: 0, size: 9, totalElements: DEMO_PRODUCTS.length });
-  expect(page.items).toHaveLength(9);
+const categories = [
+  { id: 'c-living', name: 'Living', slug: 'living', productCount: 2 },
+  { id: 'c-decor', name: 'Decor', slug: 'decor', productCount: 1 },
+];
+const product = (id: string, categoryId: string) => ({
+  id, name: `Product ${id}`, slug: `product-${id}`, description: '', categoryId, price: '10.00', currency: 'USD',
+  available: true, imageUrl: `/images/products/product-${id}`, imageAlt: 'alt', details: [],
 });
 
-test('an out-of-range page is clamped to the last page instead of returning nothing', async () => {
-  const page = await listProducts({ page: 99 });
-  expect(page.page).toBe(Math.ceil(DEMO_PRODUCTS.length / 9) - 1);
-  expect(page.items.length).toBeGreaterThan(0);
+function setup(handler: (config: InternalAxiosRequestConfig) => { status: number; data: unknown }) {
+  const calls: InternalAxiosRequestConfig[] = [];
+  const http = axios.create({
+    adapter: async config => {
+      calls.push(config);
+      const { status, data } = handler(config);
+      const response = { config, status, data, statusText: '', headers: {} };
+      if (status >= 400) throw new axios.AxiosError('failed', String(status), config, undefined, response);
+      return response;
+    },
+  });
+  return { api: createCatalogApi(http), calls };
+}
+
+test('listing maps storefront filters to API parameters and joins room names', async () => {
+  const { api, calls } = setup(config => config.url === '/categories'
+    ? { status: 200, data: categories }
+    : { status: 200, data: { items: [product('1', 'c-decor')], page: 1, size: 9, totalElements: 10 } });
+  const page = await api.listProducts({ q: 'vase', category: 'decor', price: '100-500', inStock: true, sort: 'price,asc', page: 1 });
+  const listing = calls.find(c => c.url === '/products')!;
+  expect(listing.params).toEqual({ q: 'vase', category: 'decor', minPrice: '100.00', maxPrice: '500.00', available: true, sort: 'price,asc', page: 1, size: 9 });
+  expect(page.items[0]).toMatchObject({ categoryName: 'Decor', categorySlug: 'decor', image: '/images/products/product-1' });
+  expect(page.totalElements).toBe(10);
 });
 
-test('category, price band and stock filters combine', async () => {
-  const page = await listProducts({ category: 'living', price: 'over-500', inStock: true, size: 50 });
-  expect(page.items.length).toBeGreaterThan(0);
-  for (const item of page.items) {
-    expect(item.categorySlug).toBe('living');
-    expect(toCents(item.price)).toBeGreaterThan(50000);
-    expect(item.available).toBe(true);
-  }
+test('featured sorting and empty filters are not sent; categories are requested once per visit', async () => {
+  const { api, calls } = setup(config => config.url === '/categories'
+    ? { status: 200, data: categories } : { status: 200, data: { items: [], page: 0, size: 9, totalElements: 0 } });
+  await api.listProducts({ sort: 'featured', q: '' });
+  await api.listProducts({ price: 'under-100' });
+  expect(calls.filter(c => c.url === '/products')[0].params).toEqual({ q: undefined, category: undefined, available: undefined, sort: undefined, page: 0, size: 9 });
+  expect(calls.filter(c => c.url === '/products')[1].params).toMatchObject({ maxPrice: '99.99' });
+  expect(calls.filter(c => c.url === '/categories')).toHaveLength(1);
+  const rooms = await api.listCategories();
+  expect(rooms[0].image).toBe('/images/categories/living.webp');
 });
 
-test('search matches names, descriptions and room names case-insensitively', async () => {
-  expect((await listProducts({ q: 'VASE', size: 50 })).items.map(p => p.slug))
-    .toEqual(expect.arrayContaining(['stoneware-vase-cream', 'concrete-bottle-vases-set-of-3']));
-  expect((await listProducts({ q: 'bath', size: 50 })).items.map(p => p.slug)).toContain('freestanding-soaking-tub');
-  expect((await listProducts({ q: 'no such thing' })).totalElements).toBe(0);
+test('an unknown product resolves to undefined; other failures are reported', async () => {
+  const { api } = setup(config => config.url === '/categories' ? { status: 200, data: categories }
+    : config.url === '/products/missing' ? { status: 404, data: { code: 'RESOURCE_NOT_FOUND' } } : { status: 500, data: {} });
+  await expect(api.getProduct('missing')).resolves.toBeUndefined();
+  await expect(api.getProduct('broken')).rejects.toBeTruthy();
 });
 
-test('sorting by price and name follows the API sort values', async () => {
-  const ascending = (await listProducts({ sort: 'price,asc', size: 50 })).items.map(p => toCents(p.price));
-  expect(ascending).toEqual([...ascending].sort((a, b) => a - b));
-  const descending = (await listProducts({ sort: 'price,desc', size: 50 })).items.map(p => toCents(p.price));
-  expect(descending).toEqual([...descending].sort((a, b) => b - a));
-  const names = (await listProducts({ sort: 'name,asc', size: 50 })).items.map(p => p.name);
-  expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en')));
-});
-
-test('category counts add up to the catalog size and every product has both image sizes declared', async () => {
-  const categories = await listCategories();
-  expect(categories.reduce((sum, c) => sum + c.productCount, 0)).toBe(DEMO_PRODUCTS.length);
-  for (const product of DEMO_PRODUCTS) expect(product.image).toMatch(/^\/images\/products\/[a-z0-9-]+$/);
-});
-
-test('product lookup by slug and related products exclude the product itself and unavailable items', async () => {
-  const vase = await getProduct('stoneware-vase-cream');
-  expect(vase?.name).toBe('Stoneware Vase, Cream');
-  expect(await getProduct('missing')).toBeUndefined();
-  const related = await listRelated(vase!);
-  expect(related).toHaveLength(4);
-  expect(related.every(p => p.id !== vase!.id && p.available)).toBe(true);
-  expect(related[0].categoryId).toBe(vase!.categoryId);
+test('related products prefer the same room and exclude the product itself', async () => {
+  const { api } = setup(config => {
+    if (config.url === '/categories') return { status: 200, data: categories };
+    const items = config.params.category === 'living' ? [product('1', 'c-living'), product('2', 'c-living')]
+      : [product('1', 'c-living'), product('3', 'c-decor'), product('4', 'c-decor'), product('5', 'c-decor')];
+    return { status: 200, data: { items, page: 0, size: 5, totalElements: items.length } };
+  });
+  const self = (await api.listProducts({})).items[0];
+  const related = await api.listRelated(self);
+  expect(related.map(p => p.id)).toEqual(['2', '3', '4', '5']);
 });

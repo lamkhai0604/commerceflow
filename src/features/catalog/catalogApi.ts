@@ -1,57 +1,92 @@
 /*
- * Catalog data access. Sprint 2 serves the demonstration data set (SF-10) through the same asynchronous,
- * paged interface as `GET /api/v1/products`, so pages do not change when the HTTP implementation replaces it.
+ * Catalog client for the public API (OpenAPI v1.2 catalog, CR-S3-01). Pages depend only on these functions;
+ * component tests replace this module with an in-memory fake (src/test/fakeCatalogApi.ts).
  */
-import { toCents } from '@/lib/money';
-import { DEMO_CATEGORIES, DEMO_FEATURED_SLUGS, DEMO_PRODUCTS } from './demoData';
+import axios, { type AxiosInstance } from 'axios';
+import { withWakeRetry } from '@/lib/serverWake';
+import type { Money } from '@/lib/money';
 import type { CategorySummary, PriceBand, ProductPage, ProductQuery, StorefrontProduct } from './types';
 
 export const DEFAULT_PAGE_SIZE = 9;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-const categoryById = new Map(DEMO_CATEGORIES.map(c => [c.id, c]));
-const products: StorefrontProduct[] = DEMO_PRODUCTS.map(p => {
-  const category = categoryById.get(p.categoryId)!;
-  return { ...p, categoryName: category.name, categorySlug: category.slug };
-});
+interface ApiCategory { id: string; name: string; slug: string; productCount: number }
+interface ApiProduct {
+  id: string; name: string; slug: string; description: string; categoryId: string; price: Money; currency: 'USD';
+  available: boolean; imageUrl: string; imageAlt: string; details: string[];
+}
+interface ApiProductPage { items: ApiProduct[]; page: number; size: number; totalElements: number }
 
-const priceBands: Record<PriceBand, (cents: number) => boolean> = {
-  'under-100': c => c < 10000,
-  '100-500': c => c >= 10000 && c <= 50000,
-  'over-500': c => c > 50000,
+/** Price bands shown in the filters, as inclusive API bounds. */
+const PRICE_BOUNDS: Record<PriceBand, { minPrice?: Money; maxPrice?: Money }> = {
+  'under-100': { maxPrice: '99.99' },
+  '100-500': { minPrice: '100.00', maxPrice: '500.00' },
+  'over-500': { minPrice: '500.01' },
 };
 
-export async function listCategories(): Promise<CategorySummary[]> {
-  return DEMO_CATEGORIES.map(c => ({ ...c, productCount: products.filter(p => p.categoryId === c.id).length }));
+export function createCatalogApi(http: AxiosInstance) {
+  let categoriesRequest: Promise<CategorySummary[]> | undefined;
+
+  const get = <T,>(url: string, params?: Record<string, unknown>) =>
+    withWakeRetry(() => http.get<T>(url, { params }).then(response => response.data));
+
+  function listCategories(): Promise<CategorySummary[]> {
+    // Categories change rarely; one request per visit is enough. A failed request is not cached.
+    categoriesRequest ??= get<ApiCategory[]>('/categories')
+      .then(list => list.map(c => ({ ...c, image: `/images/categories/${c.slug}.webp` })))
+      .catch(error => { categoriesRequest = undefined; throw error; });
+    return categoriesRequest;
+  }
+
+  async function toStorefront(products: ApiProduct[]): Promise<StorefrontProduct[]> {
+    const categories = new Map((await listCategories()).map(c => [c.id, c]));
+    return products.map(({ imageUrl, ...product }) => {
+      const category = categories.get(product.categoryId);
+      return { ...product, image: imageUrl, categoryName: category?.name ?? '', categorySlug: category?.slug ?? '' };
+    });
+  }
+
+  async function listProducts(query: ProductQuery = {}): Promise<ProductPage> {
+    const params = {
+      q: query.q || undefined,
+      category: query.category || undefined,
+      ...(query.price ? PRICE_BOUNDS[query.price] : {}),
+      available: query.inStock ? true : undefined,
+      sort: query.sort && query.sort !== 'featured' ? query.sort : undefined,
+      page: query.page ?? 0,
+      size: query.size ?? DEFAULT_PAGE_SIZE,
+    };
+    const page = await get<ApiProductPage>('/products', params);
+    return { ...page, items: await toStorefront(page.items) };
+  }
+
+  async function getProduct(slug: string): Promise<StorefrontProduct | undefined> {
+    try {
+      const product = await get<ApiProduct>(`/products/${encodeURIComponent(slug)}`);
+      return (await toStorefront([product]))[0];
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return undefined;
+      throw error;
+    }
+  }
+
+  async function listFeatured(): Promise<StorefrontProduct[]> {
+    return (await listProducts({ size: 4 })).items;
+  }
+
+  /** Other available products, same room first. */
+  async function listRelated(product: StorefrontProduct, count = 4): Promise<StorefrontProduct[]> {
+    const sameRoom = (await listProducts({ category: product.categorySlug, inStock: true, size: count + 1 })).items;
+    let related = sameRoom.filter(p => p.id !== product.id);
+    if (related.length < count) {
+      const others = (await listProducts({ inStock: true, size: count * 2 })).items;
+      related = [...related, ...others.filter(p => p.id !== product.id && !related.some(r => r.id === p.id))];
+    }
+    return related.slice(0, count);
+  }
+
+  return { listCategories, listProducts, getProduct, listFeatured, listRelated };
 }
 
-export async function listProducts(query: ProductQuery = {}): Promise<ProductPage> {
-  const size = query.size ?? DEFAULT_PAGE_SIZE;
-  const term = query.q?.trim().toLowerCase();
-  const category = query.category ? DEMO_CATEGORIES.find(c => c.slug === query.category) : undefined;
-  let items = products.filter(p =>
-    (!term || p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term) || p.categoryName.toLowerCase().includes(term))
-    && (!query.category || p.categoryId === category?.id)
-    && (!query.price || priceBands[query.price](toCents(p.price)))
-    && (!query.inStock || p.available));
-  if (query.sort === 'name,asc') items = [...items].sort((a, b) => a.name.localeCompare(b.name, 'en'));
-  if (query.sort === 'price,asc') items = [...items].sort((a, b) => toCents(a.price) - toCents(b.price));
-  if (query.sort === 'price,desc') items = [...items].sort((a, b) => toCents(b.price) - toCents(a.price));
-  const totalElements = items.length;
-  const lastPage = Math.max(0, Math.ceil(totalElements / size) - 1);
-  const page = Math.min(Math.max(0, query.page ?? 0), lastPage);
-  return { items: items.slice(page * size, page * size + size), page, size, totalElements };
-}
-
-export async function getProduct(slug: string): Promise<StorefrontProduct | undefined> {
-  return products.find(p => p.slug === slug);
-}
-
-export async function listFeatured(): Promise<StorefrontProduct[]> {
-  return DEMO_FEATURED_SLUGS.map(slug => products.find(p => p.slug === slug)!);
-}
-
-/** Other products, same category first. */
-export async function listRelated(product: StorefrontProduct, count = 4): Promise<StorefrontProduct[]> {
-  const others = products.filter(p => p.id !== product.id && p.available);
-  return [...others.filter(p => p.categoryId === product.categoryId), ...others.filter(p => p.categoryId !== product.categoryId)].slice(0, count);
-}
+const api = createCatalogApi(axios.create({ baseURL: API_BASE_URL, timeout: 20_000 }));
+export const { listCategories, listProducts, getProduct, listFeatured, listRelated } = api;

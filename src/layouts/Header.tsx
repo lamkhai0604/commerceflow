@@ -5,13 +5,18 @@ import { BagIcon, CloseIcon, LogoMark, MenuIcon, SearchIcon } from '@/components
 import { Dialog } from '@/components/ui/Dialog';
 import AccountMenu from '@/features/auth/components/AccountMenu';
 import { cartActions, selectCartCount } from '@/features/cart/cartSlice';
-import { DEMO_CATEGORIES } from '@/features/catalog/demoData';
+import { listCategories } from '@/features/catalog/catalogApi';
+import { useAsync } from '@/lib/useAsync';
 import { cn } from '@/lib/cn';
 
-export const NAV_LINKS = [
-  { label: 'Shop all', to: '/products' },
-  ...DEMO_CATEGORIES.map(c => ({ label: c.name, to: `/products?category=${c.slug}` })),
-];
+/** "Shop all" plus one link per room from the catalog API; only "Shop all" shows until rooms load. */
+export function useNavLinks() {
+  const categories = useAsync(listCategories, 'categories');
+  return [
+    { label: 'Shop all', to: '/products' },
+    ...(categories.data ?? []).map(c => ({ label: c.name, to: `/products?category=${c.slug}` })),
+  ];
+}
 
 function useIsActive() {
   const location = useLocation();
@@ -49,6 +54,7 @@ export function Header() {
   const count = useAppSelector(selectCartCount);
   const [menuOpen, setMenuOpen] = useState(false);
   const isActive = useIsActive();
+  const NAV_LINKS = useNavLinks();
   const closeMenu = () => setMenuOpen(false);
 
   return (
