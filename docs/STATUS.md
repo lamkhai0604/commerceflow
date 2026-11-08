@@ -5,11 +5,11 @@ Updated: 2026-11-08
 | Field | Value |
 | --- | --- |
 | Production (`master`) | `a02d7c5` — Sprint 1C release (authentication foundation) |
-| Integration (`develop`) | `9d70ef2` — Sprint 2 foundation (PR #21) |
+| Integration (`develop`) | `0d836f2` — Sprint 2 storefront (PRs #21 and #22) |
 | Active sprint | [Sprint 2 — Storefront cleanup and redesign](sprints/sprint-2.md) |
-| Active branch | `feature/sprint-2-storefront` (tasks S2-T05 to S2-T12) |
+| Active branch | none; Sprint 2 awaits release into `master` |
 
-## Completed in the active branch
+## Completed in Sprint 2
 
 - Design system components, demonstration catalog with licensed images, redesigned home, listing and product pages, cart drawer and page, demo checkout with confirmation, authentication UI without MUI, error boundary, E2E-16 storefront flow.
 - Verification (local, Node 22.23): typecheck, ESLint, 121 Vitest tests, production build, browser checks at 1280 px and 375 px, Lighthouse mobile (performance 93, accessibility 100), E2E-16 against the local production build. The HTTPS E2E suite runs in CI.
@@ -22,4 +22,4 @@ Updated: 2026-11-08
 
 ## Next action
 
-Merge the Sprint 2 storefront pull request into `develop` after CI passes, then open the Sprint 2 release pull request (`develop` → `master`) for the Product Owner.
+The Product Owner reviews and merges the Sprint 2 release pull request (`develop` → `master`). Next sprint: host the backend and database on free tiers, route `/api/v1` from Vercel, and replace the demonstration catalog with the catalog API.
