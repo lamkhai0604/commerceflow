@@ -31,10 +31,14 @@ class RegistrationConstraintsMigrationTest {
     }
 
     @Test
-    void freshInstallAppliesAllFourMigrations() {
-        migrations(null).migrate();
+    void freshInstallAppliesEveryMigrationIncludingCr05() {
+        var flyway = migrations(null);
+        int available = flyway.info().all().length;
+        flyway.migrate();
         assertThat(width("email")).isEqualTo(254); assertThat(width("full_name")).isEqualTo(50);
-        assertThat(jdbc().queryForObject("SELECT count(*) FROM public.flyway_schema_history WHERE success",Integer.class)).isEqualTo(4);
+        var applied = jdbc().queryForList("SELECT version FROM public.flyway_schema_history WHERE success ORDER BY installed_rank", String.class);
+        // Every migration on the classpath applies to an empty database; V1–V4 (authentication and CR-05) are among them.
+        assertThat(applied).hasSize(available).containsSequence("1", "2", "3", "4");
     }
 
     @Test
