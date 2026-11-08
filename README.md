@@ -37,6 +37,16 @@ flowchart LR
   S -.->|sessions| D
 ```
 
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `frontend/` | React storefront (Vite, TypeScript, Tailwind CSS) |
+| `backend/` | Spring Boot API with Flyway migrations |
+| `e2e/` | HTTPS integration environment and Playwright browser tests |
+| `docs/` | Requirements, architecture, API contracts, sprint records and decisions |
+| `render.yaml`, `vercel.json` | Hosting configuration for the API and the storefront |
+
 Key decisions (session authentication, same-origin deployment, crash-safe idempotent checkout, mock payments) are listed in the [decision log](docs/DECISIONS.md).
 
 ## Getting started
@@ -46,12 +56,13 @@ Key decisions (session authentication, same-origin deployment, crash-safe idempo
 Requires Node 22.12 or later (CI uses Node 24).
 
 ```sh
+cd frontend
 npm ci
 npm run dev               # development server on http://localhost:3000; /api/v1 is proxied to :8080
 npm run typecheck
 npm run lint
 npm test
-npm run build             # output in build/
+npm run build             # output in frontend/build/
 ```
 
 ### Backend
@@ -71,8 +82,9 @@ docker compose --env-file .env up -d --wait
 Requires Linux Docker Engine with Compose v2. See the [runbook](docs/testing/e2e-https-integration.md).
 
 ```sh
-npm run test:e2e:infra
-bash e2e/scripts/run.sh local-<unique-run-id>
+npm ci --prefix e2e
+npm run --prefix e2e test:infra
+bash e2e/scripts/run.sh local-<unique-run-id>   # needs frontend/build and the backend jar
 ```
 
 ## Deployment

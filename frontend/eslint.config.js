@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['build', 'node_modules', 'backend', 'e2e/**/*.cjs'] },
+  { ignores: ['build', 'node_modules'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -15,10 +15,5 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
-  },
-  {
-    files: ['e2e/**/*.ts'],
-    languageOptions: { globals: globals.node },
-    rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
 );

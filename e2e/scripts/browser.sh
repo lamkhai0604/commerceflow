@@ -10,4 +10,4 @@ done
 curl --noproxy localhost,127.0.0.1 --cacert /ca.crt --fail --silent --max-time 10 --output /dev/null https://localhost:8443/api/v1/health
 node e2e/support/tls-check.cjs accept
 chromium --version > /evidence/browser-version.txt
-npm run test:e2e
+npm --prefix e2e test

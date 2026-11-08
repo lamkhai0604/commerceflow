@@ -38,7 +38,7 @@ services:
     ports: ['127.0.0.1:8443:8443']
     volumes:
       - ${REPO_DIR}/e2e/infra/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${REPO_DIR}/build:/site:ro
+      - ${REPO_DIR}/frontend/build:/site:ro
       - ${STATE_DIR:?}/certs/server.crt:/certs/server.crt:ro
       - ${STATE_DIR}/certs/server.key:/certs/server.key:ro
     # The test browser shares this network namespace for https://localhost:8443.
@@ -57,9 +57,8 @@ services:
       TEST_DB_PASSWORD: ${TEST_DB_PASSWORD}
       TEST_DB_HOST: postgres
     volumes:
-      - ${REPO_DIR}/node_modules:/work/node_modules:ro
-      - ${REPO_DIR}/package.json:/work/package.json:ro
-      - ${REPO_DIR}/tsconfig.json:/work/tsconfig.json:ro
+      - ${REPO_DIR}/e2e/node_modules:/work/e2e/node_modules:ro
+      - ${REPO_DIR}/e2e/package.json:/work/e2e/package.json:ro
       - ${REPO_DIR}/e2e/playwright.config.ts:/work/e2e/playwright.config.ts:ro
       - ${REPO_DIR}/e2e/tsconfig.json:/work/e2e/tsconfig.json:ro
       - ${REPO_DIR}/e2e/tests:/work/e2e/tests:ro
