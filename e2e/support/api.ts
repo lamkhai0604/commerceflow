@@ -73,6 +73,8 @@ export async function expireOwnedSession(email: string) {
   } catch (error) {
     if (error instanceof Error && error.message === 'OWNED_SESSION_REQUIRED') throw error;
     const code = (error as { code?: string }).code;
+    // Deliberately no `cause`: the driver error may carry connection details; only a sanitized code is reported.
+    // eslint-disable-next-line preserve-caught-error
     throw new Error(code && ['ECONNREFUSED', 'ENETUNREACH', 'EAI_AGAIN', 'ENOTFOUND'].includes(code)
       ? 'EXPIRY_DATABASE_UNREACHABLE' : 'EXPIRY_FIXTURE_FAILED');
   }
