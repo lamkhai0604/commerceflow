@@ -12,12 +12,12 @@
 
 | ID | Task | Status |
 | --- | --- | --- |
-| S3-T01 | Records: decisions, CR-S3-01, OpenAPI catalog changes, sprint plan | Done (PR pending) |
-| S3-T02 | Flyway V5 catalog schema and V6 demonstration catalog seed (same 21 products and images as Sprint 2) | Done (PR pending) |
-| S3-T03 | Public catalog endpoints: `GET /categories`, `GET /products` (search, category, price, availability, sort, paging), `GET /products/{idOrSlug}`; validated parameters and Problem Details errors | Done (PR pending) |
-| S3-T04 | Tests: web-layer tests runnable without Docker; PostgreSQL integration tests required in CI; E2E-16 against the real API | Done (PR pending) |
-| S3-T05 | Frontend: HTTP catalog client replaces the in-browser data set; loading feedback while a sleeping server wakes | Done (PR pending) |
-| S3-T06 | Deployment assets: backend Dockerfile, Render blueprint, production settings (proxy headers, memory), Vercel rewrite, step-by-step setup guide | Done (PR pending) |
+| S3-T01 | Records: decisions, CR-S3-01, OpenAPI catalog changes, sprint plan | Done (PR #25, merged) |
+| S3-T02 | Flyway V5 catalog schema and V6 demonstration catalog seed (same 21 products and images as Sprint 2) | Done (PR #25, merged) |
+| S3-T03 | Public catalog endpoints: `GET /categories`, `GET /products` (search, category, price, availability, sort, paging), `GET /products/{idOrSlug}`; validated parameters and Problem Details errors | Done (PR #25, merged) |
+| S3-T04 | Tests: web-layer tests runnable without Docker; PostgreSQL integration tests required in CI; E2E-16 against the real API | Done (PR #25, merged) |
+| S3-T05 | Frontend: HTTP catalog client replaces the in-browser data set; loading feedback while a sleeping server wakes | Done (PR #25, merged) |
+| S3-T06 | Deployment assets: backend Dockerfile, Render blueprint, production settings (proxy headers, memory), Vercel rewrite, step-by-step setup guide | Done (PR #25, merged) |
 | S3-T07 | Product Owner creates the Render and Neon services from the guide; live verification of health, catalog, sign-up, sign-in and cookies on the Vercel origin | Proposed |
 
 ## Acceptance
@@ -37,10 +37,10 @@ Server-side cart, orders, checkout and administration (next sprints).
 
 ## Progress notes
 
-- S3-T01 to S3-T06 on `feature/sprint-3-catalog-api`:
+- S3-T01 to S3-T06 merged into `develop` through PR #25 (`9f0971d`) after Backend CI (including the catalog PostgreSQL suite), Frontend CI, the HTTPS integration workflow (16 scenarios, E2E-16 against the real catalog API) and the Vercel preview passed. The first CI run failed because an existing migration test hard-coded four migrations; the test now checks that every migration applies:
   - Flyway V5 (catalog tables per the ERD plus CR-S3-01 columns and constraints) and V6 (6 rooms, 21 products, identical to the Sprint 2 storefront).
   - Read-only catalog endpoints with parameter validation; malformed parameters give `INVALID_REQUEST`, absent or inactive products `RESOURCE_NOT_FOUND` (CR-04 texts).
   - Frontend reads the catalog over HTTP; safe reads retry while the free API instance wakes, with a visible notice. The in-browser data set is now a test fixture only.
   - Dockerfile, Render Blueprint, `prod` profile and Vercel rewrite; [deployment guide](../DEPLOYMENT.md).
 - Evidence (local, revision recorded in the pull request): 21 backend web-layer tests; backend `prod` profile against PostgreSQL 16 applied V1–V6 and served the catalog; 128 frontend tests; browser flow through the production build and the real API (catalog, filters, cart, sign-up, log-in with HttpOnly SameSite=Lax cookie, log-out). PostgreSQL integration suites (including the new catalog suite) run in CI.
-- S3-T07 waits for the Product Owner to create the Neon and Render services after the release reaches `master`.
+- S3-T07 waits for the Product Owner to merge the Sprint 3 release into `master` and then create the Neon and Render services.
