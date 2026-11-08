@@ -3,7 +3,7 @@ source "$(dirname -- "$0")/common.sh"
 RUN_ID=${1:?Supply a fresh run ID}; validate_id "$RUN_ID"
 [[ ! -L "$ROOT/e2e/.state" ]] || { echo "Refusing linked state root"; exit 1; }
 STATE="$ROOT/e2e/.state/$RUN_ID"
-[[ -f "$ROOT/build/index.html" && -f "$ROOT/backend/target/backend-0.0.1-SNAPSHOT.jar" ]] || { echo 'Build frontend and backend first'; exit 1; }
+[[ -f "$ROOT/frontend/build/index.html" && -f "$ROOT/backend/target/backend-0.0.1-SNAPSHOT.jar" ]] || { echo 'Build frontend and backend first'; exit 1; }
 docker_cmd info > /dev/null
 if ! containers=$(docker_cmd ps -aq --filter "label=com.docker.compose.project=cf-s1c-$RUN_ID" 2>/dev/null); then
   echo 'Container inventory failed' >&2; exit 1

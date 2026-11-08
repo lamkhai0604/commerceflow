@@ -78,7 +78,7 @@ function Footer() {
           <h2 className="text-sm font-semibold text-white">Project</h2>
           <div className={`mt-3.5 ${column}`}>
             <a href="https://github.com/lamkhai0604/ecommerce-project" className={link}>Source on GitHub</a>
-            <a href="https://github.com/lamkhai0604/ecommerce-project/blob/master/public/images/SOURCES.md" className={link}>Image credits</a>
+            <a href="https://github.com/lamkhai0604/ecommerce-project/blob/master/frontend/public/images/SOURCES.md" className={link}>Image credits</a>
           </div>
         </nav>
       </div>

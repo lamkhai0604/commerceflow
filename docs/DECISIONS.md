@@ -24,11 +24,12 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | S2-D05 | Product name CommerceFlow; English interface; prices in US dollars | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
 | S2-D06 | Demonstration catalog domain: home and lifestyle goods | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
 | S2-D07 | Free services and free-tier hosting only; no paid services | Approved — Product Owner | 2026-11-08 | [AGENTS.md](../AGENTS.md) |
-| S2-D08 | Storefront imagery from Unsplash under the Unsplash License, self-hosted and listed with source links in `public/images/SOURCES.md`; photographs showing people are not used | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
+| S2-D08 | Storefront imagery from Unsplash under the Unsplash License, self-hosted and listed with source links in `frontend/public/images/SOURCES.md`; photographs showing people are not used | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
 | S2-D09 | Storefront design (layout, colour, typography and components) as reviewed in the Sprint 2 design canvas | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
 | S2-D10 | Contributors may merge pull requests into `develop` after required CI checks pass; `develop` to `master` remains with the Product Owner | Approved — Product Owner | 2026-11-08 | [AGENTS.md](../AGENTS.md) |
 | S3-D01 | Host the Spring Boot API on a Render free web service (Docker) and PostgreSQL on a Neon free project; no paid tiers. The free web service sleeps after 15 minutes without traffic, and the storefront tells visitors while it wakes | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
 | S3-D02 | Keep one origin in production: Vercel rewrites `/api/v1/*` to the Render service, so session cookies stay first-party and the existing CSRF design (D3) applies unchanged | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
+| S3-D03 | Repository layout: the storefront moves to `frontend/`, the browser E2E suite becomes its own npm package in `e2e/`, and the root keeps only records and hosting configuration | Approved — Product Owner | 2026-11-08 | [WORKFLOW.md](WORKFLOW.md) |
 
 ## Change requests
 

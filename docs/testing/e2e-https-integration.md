@@ -75,20 +75,21 @@ The browser image installs Chromium and NSS tooling through Debian packages;
 it does not download the previously blocked Playwright Docker image.
 
 ```sh
-npm ci
-npm run typecheck
-npm run typecheck:e2e
-npm run lint
-npm run lint:e2e
-npm run test:e2e:infra
-npm test
-VITE_API_BASE_URL=/api/v1 npm run build
+npm ci --prefix frontend
+npm ci --prefix e2e
+npm run --prefix frontend typecheck
+npm run --prefix frontend lint
+npm test --prefix frontend
+VITE_API_BASE_URL=/api/v1 npm run --prefix frontend build
+npm run --prefix e2e typecheck
+npm run --prefix e2e lint
+npm run --prefix e2e test:infra
 ./backend/mvnw -f backend/pom.xml clean verify
-npm run test:e2e -- --list
+(cd e2e && npx playwright test --config=playwright.config.ts --list)
 bash e2e/scripts/run.sh local-<unique-run-id>
 ```
 
-`npm run test:e2e` is executed inside the isolated trusted browser container by
+`npm --prefix e2e test` is executed inside the isolated trusted browser container by
 run.sh. Running it on an unprepared host will correctly fail TLS/fixture checks;
 it does not install host trust automatically. The --list command needs no stack.
 For managed environments, retain the platform proxy/CA settings; an optional
