@@ -15,8 +15,15 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | S1C-ADR-01 | Isolated HTTPS integration environment (Caddy, same origin, PostgreSQL 17) | Approved | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
 | S1C-ADR-02 | Real-browser E2E with Playwright Chromium, no mocked API for acceptance | Approved | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
 | S1C-ADR-03 | Dedicated integration CI workflow, read-only permissions, no deployment | Approved | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
-| S1C-ADR-04 | Context-aware HTTP 401 handling in the frontend | Architecture approved; implementation on hold | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
+| S1C-ADR-04 | Context-aware HTTP 401 handling in the frontend | Architecture approved; quiet startup implemented in Sprint 2 (S2-T03), remaining behavior pending | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
 | S1C-ADR-05 | Evidence, secrets and data isolation for tests | Approved | 2026-11-04 | [Sprint 1C](sprints/sprint-1c.md) |
+| S2-D01 | Replace the theme-derived storefront with an original design; remove third-party theme code, imagery and copy | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
+| S2-D02 | Complete the storefront redesign with demonstration data before implementing the catalog, cart and checkout APIs | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
+| S2-D03 | Frontend build on Vite with React 18 (from Create React App and React 17); Vitest replaces Jest | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
+| S2-D04 | Tailwind CSS with project-owned components as the single styling system; Bootstrap, styled-components and, after the redesign, MUI are removed | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
+| S2-D05 | Product name CommerceFlow; English interface; prices in US dollars | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
+| S2-D06 | Demonstration catalog domain: home and lifestyle goods | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
+| S2-D07 | Free services and free-tier hosting only; no paid services | Approved — Product Owner | 2026-11-08 | [AGENTS.md](../AGENTS.md) |
 
 ## Change requests
 

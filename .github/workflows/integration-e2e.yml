@@ -10,7 +10,8 @@ on:
       - 'e2e/**'
       - 'package*.json'
       - 'tsconfig*.json'
-      - 'index.d.ts'
+      - 'index.html'
+      - 'vite.config.ts'
       - '.github/workflows/integration-e2e.yml'
   workflow_dispatch:
 
@@ -24,7 +25,7 @@ jobs:
     env:
       CI: 'true'
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      REACT_APP_AUTH_API_BASE_URL: /api/v1
+      VITE_API_BASE_URL: /api/v1
       E2E_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
@@ -43,11 +44,11 @@ jobs:
           npm ci
           npm run typecheck
           npm run typecheck:e2e
-          npm run lint:auth
+          npm run lint
           npm run lint:e2e
           npm run test:e2e:infra
           for script in e2e/scripts/*.sh; do bash -n "$script"; done
-          npm test -- --watchAll=false --runInBand
+          npm test
           npm run build
       - name: Backend and mandatory PostgreSQL tests
         run: |

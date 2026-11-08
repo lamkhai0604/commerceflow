@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+/* Design tokens. Final values are set in the Sprint 2 design-system task; these are neutral defaults. */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --color-brand-50: #fafaf9;
+  --color-brand-900: #1c1917;
+  --color-accent-500: #d97706;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-white text-stone-900 antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-stone-900;
+  }
+}
