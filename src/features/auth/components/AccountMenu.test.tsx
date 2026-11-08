@@ -12,7 +12,7 @@ test('startup uses a quiet session placeholder then accessible account menu', ()
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   act(() => { store.dispatch(authActions.restored(undefined)); });
   fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Register' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Create account' }));
   expect(screen.getByRole('dialog')).toHaveAccessibleName('Create your CommerceFlow account');
 });
 test('logout pending keeps identity until confirmation and exposes loading feedback', () => {

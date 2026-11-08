@@ -4,24 +4,22 @@ Updated: 2026-11-08
 
 | Field | Value |
 | --- | --- |
-| Production (`master`) | `a02d7c5` — Sprint 1C release (authentication foundation); Vercel production deployment succeeded |
-| Integration (`develop`) | `bcf140c` |
+| Production (`master`) | `a02d7c5` — Sprint 1C release (authentication foundation) |
+| Integration (`develop`) | `9d70ef2` — Sprint 2 foundation (PR #21) |
 | Active sprint | [Sprint 2 — Storefront cleanup and redesign](sprints/sprint-2.md) |
-| Active branch | `feature/sprint-2-foundation` (tasks S2-T01 to S2-T03) |
+| Active branch | `feature/sprint-2-storefront` (tasks S2-T05 to S2-T12) |
 
 ## Completed in the active branch
 
-- Theme-derived storefront code, assets and the legacy demo-service client removed; `src/` restructured by feature.
-- Build migrated to Vite 8, React 18, Vitest and ESLint 10; CI workflows and `vercel.json` updated.
-- Session restore at startup is silent on any failure.
-- Verification (local, Node 22): type check, lint, 89 unit and component tests, production build, 26 lifecycle tests; browser check at 1280 px and 375 px with no startup alert.
+- Design system components, demonstration catalog with licensed images, redesigned home, listing and product pages, cart drawer and page, demo checkout with confirmation, authentication UI without MUI, error boundary, E2E-16 storefront flow.
+- Verification (local, Node 22.23): typecheck, ESLint, 121 Vitest tests, production build, browser checks at 1280 px and 375 px, Lighthouse mobile (performance 93, accessibility 100), E2E-16 against the local production build. The HTTPS E2E suite runs in CI.
 
 ## Known limitations
 
-- The home page is an interim page until the redesign tasks land; it states that the redesign is in progress.
-- No backend is hosted for the Vercel deployment, so sign-in on Vercel cannot complete. Backend hosting is planned after the redesign.
-- The authentication dialog still uses MUI until S2-T11.
+- Catalog, cart and checkout use demonstration data in the browser; no order is created on a server.
+- No backend is hosted for the Vercel deployment, so sign-in on Vercel cannot complete. Backend hosting is the first item of the next sprint.
+- Product variants shown in the design review are not implemented (not in the API baseline).
 
 ## Next action
 
-Open the S2-T01 to S2-T03 pull request into `develop`, then start S2-T04 (design system and design review).
+Merge the Sprint 2 storefront pull request into `develop` after CI passes, then open the Sprint 2 release pull request (`develop` → `master`) for the Product Owner.

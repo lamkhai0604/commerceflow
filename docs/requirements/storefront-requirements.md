@@ -30,5 +30,6 @@ Server-side catalog, cart persistence, order placement, payments and administrat
 
 ## Open questions
 
-- Number of demonstration products and categories (proposed: 24 products in 6 categories).
+- Number of demonstration products and categories: resolved, 21 products in 6 rooms, one product per licensed photograph.
 - Whether a dark colour scheme is required (proposed: not in Sprint 2).
+- Product variants (for example colour) shown in the design review are not in the OpenAPI baseline; they are a backlog candidate that needs an API change request.

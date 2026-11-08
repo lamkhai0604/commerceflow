@@ -1,26 +1,76 @@
-import { Link, Outlet } from 'react-router-dom';
-import AccountMenu from '@/features/auth/components/AccountMenu';
+import { useEffect } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ToastProvider } from '@/components/ui/Toast';
+import { CartDrawer } from '@/features/cart/components/CartDrawer';
+import { Header, NAV_LINKS } from './Header';
+
+/** Moves to the top of the page on navigation, as a full page load would. */
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname, search]);
+  return null;
+}
 
 export default function MainLayout() {
+  const { pathname } = useLocation();
   return (
-    <div className="flex min-h-dvh flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
-        Skip to content
-      </a>
-      <header className="border-b border-stone-200">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link to="/" className="text-lg font-semibold tracking-tight text-stone-900">CommerceFlow</Link>
-          <AccountMenu />
+    <ToastProvider>
+      <ScrollToTop />
+      <div className="flex min-h-dvh flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow">
+          Skip to content
+        </a>
+        <p className="bg-pine-700 px-4 py-2 text-center text-[13px] text-white">
+          Demo store · Prices in US dollars · No real orders or payments are taken
+        </p>
+        <Header />
+        <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+          <ErrorBoundary resetKey={pathname}><Outlet /></ErrorBoundary>
+        </main>
+        <Footer />
+      </div>
+      <CartDrawer />
+    </ToastProvider>
+  );
+}
+
+function Footer() {
+  const column = 'flex flex-col gap-2.5 text-sm';
+  const link = 'text-stone-300 hover:text-white';
+  return (
+    <footer className="mt-24 bg-stone-900 text-stone-200">
+      <div className="mx-auto grid max-w-7xl gap-10 px-5 pt-14 pb-8 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 xl:px-8">
+        <div>
+          <p className="text-lg font-bold tracking-tight text-white">CommerceFlow</p>
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-stone-300">
+            A portfolio e-commerce project. Products, prices and checkout are for demonstration only.
+          </p>
         </div>
-      </header>
-      <main id="main" className="flex-1">
-        <Outlet />
-      </main>
-      <footer className="border-t border-stone-200 bg-stone-50">
-        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-stone-600 sm:px-6">
-          © {new Date().getFullYear()} CommerceFlow. A portfolio project; no real orders or payments are processed.
-        </div>
-      </footer>
-    </div>
+        <nav aria-label="Shop">
+          <h2 className="text-sm font-semibold text-white">Shop</h2>
+          <div className={`mt-3.5 ${column}`}>
+            {NAV_LINKS.slice(0, 4).map(l => <Link key={l.to} to={l.to} className={link}>{l.label}</Link>)}
+          </div>
+        </nav>
+        <nav aria-label="Help">
+          <h2 className="text-sm font-semibold text-white">Help</h2>
+          <div className={`mt-3.5 ${column}`}>
+            <Link to="/cart" className={link}>Your cart</Link>
+            <Link to="/checkout" className={link}>Checkout</Link>
+          </div>
+        </nav>
+        <nav aria-label="Project">
+          <h2 className="text-sm font-semibold text-white">Project</h2>
+          <div className={`mt-3.5 ${column}`}>
+            <a href="https://github.com/lamkhai0604/ecommerce-project" className={link}>Source on GitHub</a>
+            <a href="https://github.com/lamkhai0604/ecommerce-project/blob/master/public/images/SOURCES.md" className={link}>Image credits</a>
+          </div>
+        </nav>
+      </div>
+      <div className="mx-auto max-w-7xl border-t border-stone-700 px-5 py-6 text-[13px] text-stone-300 sm:px-6 xl:px-8">
+        © {new Date().getFullYear()} CommerceFlow. Built by Lam Khai.
+      </div>
+    </footer>
   );
 }

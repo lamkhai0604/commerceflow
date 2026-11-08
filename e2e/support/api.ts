@@ -35,7 +35,7 @@ export async function register(page: Page, user: { email: string; password: stri
 }
 export async function openLogin(page: Page) {
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('menuitem', { name: 'Login', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Log in', exact: true }).click();
 }
 export async function login(page: Page, user: { email: string; password: string }) {
   await openLogin(page);
