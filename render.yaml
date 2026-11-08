@@ -1,0 +1,21 @@
+# Render Blueprint for the CommerceFlow API (decision S3-D01). Free plan only.
+# Secrets are entered in the Render dashboard when the Blueprint is created; they are never committed.
+services:
+  - type: web
+    name: commerceflow-api
+    runtime: docker
+    plan: free
+    region: virginia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    branch: master
+    autoDeploy: true
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false

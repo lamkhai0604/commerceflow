@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { AuthFailure, LoginPayload, RegisterPayload, UserProfile } from '@/features/auth/authModels';
 import { codePoints, isEmailCandidate, normalizeEmail } from '@/features/auth/authValidation';
+import { withWakeRetry } from '@/lib/serverWake';
 
 // Authentication client. Cookies stay browser-managed; the CSRF token stays in memory only.
 export function createAuthApi(http: AxiosInstance = axios.create({
@@ -50,7 +51,9 @@ export function createAuthApi(http: AxiosInstance = axios.create({
   }
   async function request<T>(config: AxiosRequestConfig, expectedStatus = 200): Promise<T> {
     try {
-      const response = await http.request<T>({ ...config, withCredentials: true });
+      const send = () => http.request<T>({ ...config, withCredentials: true });
+      // Reads may be repeated while the hosted API wakes up; state-changing requests are never replayed.
+      const response = config.method === 'GET' ? await withWakeRetry(send) : await send();
       if (response.status !== expectedStatus) throw new Error('Unexpected response');
       return response.data;
     }

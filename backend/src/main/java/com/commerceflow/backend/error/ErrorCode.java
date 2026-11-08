@@ -8,6 +8,7 @@ public enum ErrorCode {
     ACCESS_DENIED(403, "Access denied", "You do not have permission to perform this action"),
     VALIDATION_ERROR(400, "Invalid input", "Request validation failed"),
     INVALID_REQUEST(400, "Invalid request", "Request body or parameters are invalid"),
+    RESOURCE_NOT_FOUND(404, "Resource not found", "The requested resource is unavailable"),
     INTERNAL_ERROR(500, "Internal server error", "The request could not be completed"),
     SERVICE_UNAVAILABLE(503, "Service unavailable", "The service is temporarily unavailable"),
     METHOD_NOT_ALLOWED(405, "Method not allowed", "This operation does not support that request method"),
