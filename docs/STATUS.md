@@ -5,11 +5,11 @@ Updated: 2026-11-08
 | Field | Value |
 | --- | --- |
 | Production (`master`) | `16794a3` — Sprint 2 release (redesigned storefront on demonstration data) |
-| Integration (`develop`) | `a86460e` |
+| Integration (`develop`) | `9f0971d` — Sprint 3 catalog API (PR #25) |
 | Active sprint | [Sprint 3 — Catalog API and hosted backend](sprints/sprint-3.md) |
-| Active branch | `feature/sprint-3-catalog-api` (S3-T01 to S3-T06) |
+| Active branch | none; Sprint 3 release pending, then S3-T07 (service setup) |
 
-## Completed in the active branch
+## Completed in Sprint 3 so far
 
 - Catalog schema and seed migrations, public catalog endpoints, frontend catalog over HTTP with wake-up handling, deployment assets and guide.
 - Verification is listed in the sprint plan's progress notes.
@@ -21,4 +21,4 @@ Updated: 2026-11-08
 
 ## Next action
 
-Merge the Sprint 3 pull request into `develop` after CI passes and open the release pull request. After the Product Owner merges it, create the Neon and Render services following [DEPLOYMENT.md](DEPLOYMENT.md) and verify the live site.
+The Product Owner merges the Sprint 3 release pull request into `master`, then create the Neon and Render services following [DEPLOYMENT.md](DEPLOYMENT.md) and verify the live site.
