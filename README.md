@@ -8,12 +8,13 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 
 | Area | Status |
 | --- | --- |
-| Storefront UI: home, catalog with filters, product, cart and demo checkout, on demonstration data | Done (Sprint 2) |
+| Storefront UI: home, catalog with filters, product, cart and demo checkout | Done (Sprint 2); catalog served by the API since Sprint 3 |
 | Registration, login, logout, session restoration | Done (Sprint 1B) |
 | Role-based access (CUSTOMER, ADMIN) | Done (Sprint 1B) |
 | CSRF protection, secure session cookie, session rotation | Done (Sprint 1B) |
 | HTTPS same-origin integration and E2E tests | Done (Sprint 1C) |
-| Product catalog API, cart, idempotent checkout, mock payment, order cancellation | Designed (Sprint 1A), not implemented |
+| Public catalog API (categories, search, filters, sorting, paging) on PostgreSQL | Done (Sprint 3) |
+| Server-side cart, idempotent checkout, mock payment, order cancellation | Designed (Sprint 1A), not implemented |
 
 ## Tech stack
 
@@ -23,7 +24,7 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 | Backend | Java 21, Spring Boot 3.5, Spring Security, Spring Session JDBC, Spring Data JPA |
 | Database | PostgreSQL 17, Flyway migrations |
 | Testing | Vitest and React Testing Library; JUnit 5 with Testcontainers; Playwright with Chromium over HTTPS |
-| Infrastructure | Docker Compose, Caddy (HTTPS reverse proxy for integration tests), GitHub Actions |
+| Infrastructure | Vercel (frontend), Render free web service (API, Docker), Neon free PostgreSQL; Docker Compose and Caddy for HTTPS integration tests; GitHub Actions |
 
 ## Architecture
 
@@ -73,6 +74,10 @@ Requires Linux Docker Engine with Compose v2. See the [runbook](docs/testing/e2e
 npm run test:e2e:infra
 bash e2e/scripts/run.sh local-<unique-run-id>
 ```
+
+## Deployment
+
+The storefront is served by Vercel, which forwards `/api/v1` to the API on Render; PostgreSQL runs on Neon. All are free plans. Setup and operations: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Continuous integration
 

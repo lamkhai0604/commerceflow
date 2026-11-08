@@ -1,8 +1,8 @@
 /*
- * Demonstration catalog (requirement SF-10). Products, prices and stock are fictional and exist only so the
- * storefront can be designed and tested before the catalog API is implemented. Images: public/images/SOURCES.md.
+ * Test fixture mirroring the demonstration catalog seeded by backend migration V6 (fictional products and prices).
+ * Images: public/images/SOURCES.md.
  */
-import type { CategorySummary, Product, ProductMedia } from './types';
+import type { CategorySummary, Product, ProductMedia } from '@/features/catalog/types';
 
 type DemoProduct = Product & ProductMedia;
 

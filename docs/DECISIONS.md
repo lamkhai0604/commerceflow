@@ -27,6 +27,8 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | S2-D08 | Storefront imagery from Unsplash under the Unsplash License, self-hosted and listed with source links in `public/images/SOURCES.md`; photographs showing people are not used | Approved — Product Owner | 2026-11-08 | [Storefront requirements](requirements/storefront-requirements.md) |
 | S2-D09 | Storefront design (layout, colour, typography and components) as reviewed in the Sprint 2 design canvas | Approved — Product Owner | 2026-11-08 | [Sprint 2](sprints/sprint-2.md) |
 | S2-D10 | Contributors may merge pull requests into `develop` after required CI checks pass; `develop` to `master` remains with the Product Owner | Approved — Product Owner | 2026-11-08 | [AGENTS.md](../AGENTS.md) |
+| S3-D01 | Host the Spring Boot API on a Render free web service (Docker) and PostgreSQL on a Neon free project; no paid tiers. The free web service sleeps after 15 minutes without traffic, and the storefront tells visitors while it wakes | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
+| S3-D02 | Keep one origin in production: Vercel rewrites `/api/v1/*` to the Render service, so session cookies stay first-party and the existing CSRF design (D3) applies unchanged | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
 
 ## Change requests
 
@@ -41,6 +43,7 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | CR-S1C-01 | Remove the duplicate `X-Request-ID` header on MVC error responses | Implemented | 2026-11-04 | [CR-S1C-01](change-requests/CR-S1C-01-correlation-header.md) |
 | CR-S1C-02 | Fail-closed cleanup for the E2E environment | Implemented | 2026-11-04 | [Verification](sprints/sprint-1c/cr-s1c-02-verification.md) |
 | CR-S1C-03 | Stop tracking the root `.env`; move public metadata to the README | Implemented | 2026-11-05 | [CR-S1C-03](change-requests/CR-S1C-03-environment-files.md) |
+| CR-S3-01 | Catalog fields and filters for the storefront: product `slug`, image, details; category product count; price and availability filters; lookup by slug | Approved — Product Owner | 2026-11-08 | [CR-S3-01](change-requests/CR-S3-01-catalog-storefront-fields.md) |
 
 ### CR-01 — CSRF route
 

@@ -1,6 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { renderApp } from '@/test/renderApp';
 
+// Pages read the catalog through this module; the in-memory fake holds the same data as the seed migration.
+vi.mock('@/features/catalog/catalogApi', () => import('@/test/fakeCatalogApi'));
+
 const mugLine = { productId: 'aa6357c0-e6bc-5e13-86d9-d5326ecaf437', slug: 'stoneware-mug', name: 'Stoneware Mug', unitPrice: '18.00', image: '/images/products/stoneware-mug', quantity: 2 };
 
 test('home page: adding a featured product confirms what was added and updates the cart count', async () => {

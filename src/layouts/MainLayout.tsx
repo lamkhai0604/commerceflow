@@ -3,7 +3,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
 import { CartDrawer } from '@/features/cart/components/CartDrawer';
-import { Header, NAV_LINKS } from './Header';
+import { useServerWaking } from '@/lib/serverWake';
+import { Header, useNavLinks } from './Header';
 
 /** Moves to the top of the page on navigation, as a full page load would. */
 function ScrollToTop() {
@@ -25,6 +26,7 @@ export default function MainLayout() {
           Demo store · Prices in US dollars · No real orders or payments are taken
         </p>
         <Header />
+        <ServerWakeNotice />
         <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
           <ErrorBoundary resetKey={pathname}><Outlet /></ErrorBoundary>
         </main>
@@ -35,7 +37,19 @@ export default function MainLayout() {
   );
 }
 
+/** Shown while a sleeping free-tier API instance starts (S3-D01); requests retry on their own. */
+function ServerWakeNotice() {
+  const waking = useServerWaking();
+  if (!waking) return null;
+  return (
+    <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-900">
+      Starting the server. This can take up to a minute on the free hosting plan; the page will continue on its own.
+    </div>
+  );
+}
+
 function Footer() {
+  const NAV_LINKS = useNavLinks();
   const column = 'flex flex-col gap-2.5 text-sm';
   const link = 'text-stone-300 hover:text-white';
   return (
