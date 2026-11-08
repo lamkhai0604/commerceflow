@@ -1,0 +1,116 @@
+/*
+ * Demonstration catalog (requirement SF-10). Products, prices and stock are fictional and exist only so the
+ * storefront can be designed and tested before the catalog API is implemented. Images: public/images/SOURCES.md.
+ */
+import type { CategorySummary, Product, ProductMedia } from './types';
+
+type DemoProduct = Product & ProductMedia;
+
+export const DEMO_CATEGORIES: Omit<CategorySummary, 'productCount'>[] = [
+  { id: '54c66f31-3397-5307-95f6-81a54e23fc4a', name: 'Living', slug: 'living', image: '/images/categories/living.webp' },
+  { id: 'a97a7ff4-29e1-597a-a5fa-3430e170fdcb', name: 'Kitchen & Dining', slug: 'kitchen-dining', image: '/images/categories/kitchen-dining.webp' },
+  { id: '45b6bd09-6117-5893-afd5-f007ce219573', name: 'Bedroom', slug: 'bedroom', image: '/images/categories/bedroom.webp' },
+  { id: '42d9a585-10c9-5d7c-a885-2f37ea2bf209', name: 'Bath', slug: 'bath', image: '/images/categories/bath.webp' },
+  { id: '78ea73d0-7df8-5874-a33d-a64bc22b45ee', name: 'Lighting', slug: 'lighting', image: '/images/categories/lighting.webp' },
+  { id: 'b7034a57-c451-5d09-a017-3da1b64f5cbd', name: 'Decor', slug: 'decor', image: '/images/categories/decor.webp' },
+];
+
+const [LIVING, KITCHEN, BEDROOM, BATH, LIGHTING, DECOR] = DEMO_CATEGORIES.map(c => c.id);
+
+const product = (
+  id: string, slug: string, name: string, categoryId: string, price: string, description: string,
+  details: string[], imageAlt: string, available = true,
+): DemoProduct => ({
+  id, slug, name, categoryId, price, description, details, imageAlt, available,
+  currency: 'USD', image: `/images/products/${slug}`,
+});
+
+/** Listed in "featured" order. */
+export const DEMO_PRODUCTS: DemoProduct[] = [
+  product('c9b6e065-378b-5402-8c96-081a2ea255df', 'velvet-sofa-forest', 'Velvet Sofa, Forest', LIVING, '1290.00',
+    'A three-seat sofa in deep green cotton velvet, with a kiln-dried hardwood frame and tapered oak legs.',
+    ['Width 214 cm, depth 92 cm, height 84 cm', 'Seats three', 'Removable seat cushion covers'],
+    'Green velvet three-seat sofa against a white wall'),
+  product('1ce8dbdf-e0ad-5a9c-ab49-6ad53a250e1a', 'stoneware-vase-cream', 'Stoneware Vase, Cream', DECOR, '68.00',
+    'A wide-shouldered vase in matte cream stoneware. Watertight inside, so it holds fresh stems as well as dried ones.',
+    ['Height 32 cm', 'Glazed, watertight interior', 'Hand wash'],
+    'Cream stoneware vase on a marble plinth'),
+  product('1740636e-8c74-5c5a-aeb4-4be836d68e3b', 'dome-floor-lamp-graphite', 'Dome Floor Lamp, Graphite', LIGHTING, '189.00',
+    'A tall reading lamp with a tilting steel dome that directs light exactly where you need it.',
+    ['Height 160 cm', 'E26 bulb, up to 60 W (bulb not included)', 'Foot switch on the cord'],
+    'Graphite floor lamp with a dome shade'),
+  product('8c276ff6-32a6-5c86-bcb3-6666ea958a28', 'speckled-cups-set-of-4', 'Speckled Cups, Set of 4', KITCHEN, '42.00',
+    'Handleless stoneware cups with a speckled glaze, sized for espresso, tea or a short pour.',
+    ['Holds 180 ml each', 'Dishwasher and microwave safe', 'Set of four'],
+    'Speckled stoneware cups stacked on a white surface'),
+  product('359dcbb7-f917-5ccd-befa-aea165a89652', 'lounge-armchair-mustard', 'Lounge Armchair, Mustard', LIVING, '540.00',
+    'A compact armchair with a high back and mustard wool-blend upholstery, sized for reading corners.',
+    ['Width 74 cm, depth 80 cm, height 88 cm', 'Solid ash legs', 'Spot clean'],
+    'Mustard armchair in a sunlit living room'),
+  product('9d887d88-933f-5db4-aed1-6e95d2272fc8', 'percale-duvet-set', 'Percale Duvet Set', BEDROOM, '160.00',
+    'A crisp cotton percale duvet cover with two pillowcases, finished with a slate band at the foot.',
+    ['Queen size', '100% long-staple cotton percale', 'Machine wash warm'],
+    'Made bed with white percale bedding in a bright bedroom'),
+  product('c1a10d07-5cd4-5312-9330-479b8ec75898', 'leather-sofa-cognac', 'Leather Sofa, Cognac', LIVING, '1650.00',
+    'Full-grain cognac leather over deep cushions. The leather softens and darkens with use.',
+    ['Width 220 cm, depth 95 cm, height 82 cm', 'Full-grain aniline leather', 'Condition twice a year'],
+    'Cognac leather sofa on a light wooden floor'),
+  product('aa6357c0-e6bc-5e13-86d9-d5326ecaf437', 'stoneware-mug', 'Stoneware Mug', KITCHEN, '18.00',
+    'An everyday mug with a generous handle and a soft white glaze.',
+    ['Holds 350 ml', 'Dishwasher and microwave safe'],
+    'White stoneware mug on a white table'),
+  product('8077c3bc-eb37-595d-9586-365281a82e66', 'oak-nightstand', 'Oak Nightstand', BEDROOM, '210.00',
+    'A small nightstand with one soft-close drawer and an open shelf, in white oak and painted ash.',
+    ['Width 45 cm, depth 38 cm, height 52 cm', 'Soft-close drawer'],
+    'White nightstand with an oak drawer beside a bed'),
+  product('663acde6-142e-5e44-b080-2b06e84d2bc9', 'concrete-bottle-vases-set-of-3', 'Concrete Bottle Vases, Set of 3', DECOR, '58.00',
+    'Three cast-concrete bottles in graduated heights, sealed inside for dried arrangements.',
+    ['Heights 18, 24 and 30 cm', 'Not watertight; for dried stems'],
+    'Three grey concrete bottle vases against a dark wall'),
+  product('b1b56362-0eeb-5d52-b7f2-d3979de2b28e', 'molded-dining-chair-black', 'Molded Dining Chair, Black', KITCHEN, '149.00',
+    'A molded seat with a padded cushion on solid beech legs. Comfortable for long dinners.',
+    ['Seat height 46 cm', 'Wipe-clean seat', 'Sold individually'],
+    'Black molded dining chair with wooden legs on a teal background'),
+  product('a8f7639f-9f4d-56f0-b404-a4aa0d91a372', 'woven-wool-rug-ivory', 'Woven Wool Rug, Ivory', DECOR, '320.00',
+    'A flatwoven wool rug with a fine border pattern in ivory and stone.',
+    ['160 × 230 cm', 'Hand-loomed wool', 'Use a rug pad'],
+    'Rolled ivory wool rug with a patterned border'),
+  product('2048bb5e-20c6-54bb-bbc2-61d920470cfa', 'linen-sofa-sand', 'Linen Sofa, Sand', LIVING, '1180.00',
+    'A low, deep sofa in washed sand linen with loose back cushions.',
+    ['Width 230 cm, depth 100 cm, height 76 cm', 'Washable linen covers'],
+    'Sand-coloured linen sofa with a grey throw'),
+  product('3979b880-a203-5947-bdfe-133820392963', 'striped-cushion-cover', 'Striped Cushion Cover', BEDROOM, '34.00',
+    'A woven cotton cushion cover in cocoa and cream stripes with a hidden zip.',
+    ['50 × 50 cm', 'Insert not included', 'Machine wash cold'],
+    'Brown and cream striped cushions on a bed'),
+  product('5845dc93-5123-577a-be0a-cbdbba390955', 'counter-stool-black', 'Counter Stool, Black', KITCHEN, '179.00',
+    'A molded seat on a beech base with a steel footrest, sized for kitchen counters.',
+    ['Seat height 65 cm', 'Steel footrest'],
+    'Black counter stool with beech legs'),
+  product('7160177d-4f59-5482-8f40-9071f32060bc', 'arc-reading-lamp-black', 'Arc Reading Lamp, Black', LIGHTING, '219.00',
+    'A slim arc lamp that reaches over a sofa or armchair from a compact base.',
+    ['Height 175 cm, reach 90 cm', 'LED bulb included'],
+    'Black arc lamp over armchairs in a bright room'),
+  product('48242871-c43d-5fc7-b3a0-34f4726d5fb6', 'upholstered-bed-queen', 'Upholstered Bed, Queen', BEDROOM, '1390.00',
+    'A queen bed with a tufted headboard in soft oatmeal fabric and a solid slatted base.',
+    ['Queen, 160 × 200 cm mattress', 'Headboard height 130 cm', 'Mattress not included'],
+    'Upholstered bed with a tufted headboard and a bench at its foot'),
+  product('f7d1af79-fbed-5579-9c57-880037eafacb', 'shell-side-chair', 'Shell Side Chair', LIVING, '129.00',
+    'A molded white shell chair on crossed wooden legs, light enough to move from desk to dining table.',
+    ['Seat height 45 cm', 'Polypropylene seat, beech legs'],
+    'White shell chair beside a plant stand'),
+  product('8319d44a-2026-5c16-972b-81c5f5db2207', 'freestanding-soaking-tub', 'Freestanding Soaking Tub', BATH, '1850.00',
+    'An oval soaking tub in solid surface stone with a slim rim and a deep, comfortable basin.',
+    ['Length 170 cm, width 80 cm', 'Overflow and drain included', 'Professional installation recommended'],
+    'White freestanding bathtub in a bright bathroom'),
+  product('698a7f52-45ed-5b61-b67e-59790357bd58', 'compact-sofa-rust', 'Compact Sofa, Rust', LIVING, '1090.00',
+    'A two-seat sofa in rust woven fabric, scaled for smaller rooms.',
+    ['Width 180 cm, depth 88 cm', 'Seats two'],
+    'Rust-coloured sofa with a pink cushion', false),
+  product('474799ee-d9d8-59b0-ac82-8b84b1c629e0', 'oak-step-stool', 'Oak Step Stool', KITCHEN, '89.00',
+    'A tall stool in whitewashed oak that doubles as a step for high shelves.',
+    ['Height 65 cm', 'Load tested to 120 kg'],
+    'Whitewashed oak stool on a blue background', false),
+];
+
+export const DEMO_FEATURED_SLUGS = ['velvet-sofa-forest', 'stoneware-vase-cream', 'dome-floor-lamp-graphite', 'speckled-cups-set-of-4'];

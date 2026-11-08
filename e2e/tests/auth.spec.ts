@@ -12,7 +12,7 @@ test('E2E-02 genuine CSRF bootstrap', async ({ page }) => { await origin(page); 
 test('E2E-03 registration opens login without automatic authentication', async ({ page }) => {
   const user = testUser(); await page.goto('/');
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('menuitem', { name: 'Register', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Create account', exact: true }).click();
   await page.locator('#auth-full-name').fill(user.fullName); await page.locator('#auth-email').fill(user.email);
   await page.locator('#auth-password').fill(user.password); await page.locator('#auth-confirm-password').fill(user.password);
   const registration = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/auth/register');

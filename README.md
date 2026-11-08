@@ -8,7 +8,7 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 
 | Area | Status |
 | --- | --- |
-| Storefront UI: home, catalog, product, cart and checkout pages | Redesign in progress (Sprint 2) |
+| Storefront UI: home, catalog with filters, product, cart and demo checkout, on demonstration data | Done (Sprint 2) |
 | Registration, login, logout, session restoration | Done (Sprint 1B) |
 | Role-based access (CUSTOMER, ADMIN) | Done (Sprint 1B) |
 | CSRF protection, secure session cookie, session rotation | Done (Sprint 1B) |
@@ -80,7 +80,7 @@ bash e2e/scripts/run.sh local-<unique-run-id>
 | --- | --- |
 | `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (15 scenarios) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (16 scenarios: authentication and the storefront flow) and guaranteed cleanup |
 
 ## Documentation
 

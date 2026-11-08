@@ -20,7 +20,7 @@ Verify the actual repository state (branch, revision, uncommitted changes, open 
 | --- | --- |
 | Implementation within an approved sprint task | Allowed |
 | Feature branches, commits, pushes and pull requests into `develop` | Allowed |
-| Merge into `develop` | Product Owner |
+| Merge into `develop` | Product Owner, or the implementing contributor once required CI checks pass on the pull request's final revision (standing authorization — Product Owner, 2026-11-08) |
 | Merge `develop` into `master`, deployment, release | Product Owner only |
 | Material product, interface, data-model, architecture or dependency changes | Product Owner approval, recorded in the decision log |
 | Paid services | Not authorized; free tiers only |

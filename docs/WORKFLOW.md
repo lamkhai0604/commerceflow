@@ -18,7 +18,7 @@ Pull request descriptions state the problem, resulting behavior, verification (c
 | Backend | Java 21, Spring Boot 3.5, Spring Security with Spring Session JDBC, Flyway, PostgreSQL 17. See [backend/README.md](../backend/README.md) |
 | Frontend layout | `src/app` (bootstrap, store, routes), `src/features/<feature>` (state, API client, feature components), `src/components` (shared UI primitives), `src/layouts`, `src/pages`. Feature modules depend on shared components, never the reverse |
 | Imports | `@/` resolves to `src/` |
-| Styling | Tailwind utility classes and design tokens in `src/styles/index.css`. No additional CSS frameworks. MUI remains only inside the authentication dialog until the Sprint 2 redesign replaces it |
+| Styling | Tailwind utility classes and design tokens in `src/styles/index.css`. Shared components live in `src/components/ui`; no additional CSS or component frameworks. Modals use the native `<dialog>` element |
 | API access | Same-origin `/api/v1` (`VITE_API_BASE_URL` overrides it for builds). Credentials stay in HTTP-only session cookies; CSRF tokens stay in memory; nothing authentication-related is written to browser storage |
 | Errors | User-facing messages are fixed, safe strings mapped from documented error codes. Raw server detail, stack traces and identifiers are never shown |
 | Lint and format | ESLint 10 flat config (`eslint.config.js`) with typescript-eslint and React Hooks rules; zero warnings allowed |
