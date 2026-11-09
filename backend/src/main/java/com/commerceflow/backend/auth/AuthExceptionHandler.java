@@ -18,6 +18,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class AuthExceptionHandler {
+    private static final java.util.Set<String> REPORTED_FIELDS = java.util.Set.of("email", "password", "fullName",
+            "productId", "quantity", "items", "items[].productId", "items[].quantity", "deliveryMethod", "paymentScenario",
+            "shippingAddress", "shippingAddress.recipientName", "shippingAddress.addressLine1", "shippingAddress.addressLine2",
+            "shippingAddress.city", "shippingAddress.state", "shippingAddress.postalCode", "shippingAddress.countryCode",
+            "orderNumber");
+
     @ExceptionHandler(AuthService.EmailConflictException.class)
     ResponseEntity<ProblemDetail> conflict(HttpServletRequest request) {
         return ApiProblemFactory.response(ErrorCode.EMAIL_CONFLICT, request);
@@ -34,7 +40,8 @@ public class AuthExceptionHandler {
         var errors = new LinkedHashMap<String, String>();
         var fields = new ArrayList<Map<String, String>>();
         exception.getBindingResult().getFieldErrors().forEach(error -> {
-            if (!java.util.Set.of("email", "password", "fullName").contains(error.getField())) return;
+            // Only documented field names are echoed; values are never included.
+            if (!REPORTED_FIELDS.contains(error.getField().replaceAll("\\[\\d+]", "[]"))) return;
             String code = switch (error.getCode() == null ? "" : error.getCode()) {
                 case "NotNull", "NotBlank" -> "REQUIRED";
                 case "Email" -> "INVALID_FORMAT";

@@ -8,13 +8,14 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 
 | Area | Status |
 | --- | --- |
-| Storefront UI: home, catalog with filters, product, cart and demo checkout | Done (Sprint 2); catalog served by the API since Sprint 3 |
+| Storefront UI: home, catalog with filters, product, cart and checkout | Done (Sprint 2); catalog served by the API since Sprint 3 |
 | Registration, login, logout, session restoration | Done (Sprint 1B) |
 | Role-based access (CUSTOMER, ADMIN) | Done (Sprint 1B) |
 | CSRF protection, secure session cookie, session rotation | Done (Sprint 1B) |
 | HTTPS same-origin integration and E2E tests | Done (Sprint 1C) |
 | Public catalog API (categories, search, filters, sorting, paging) on PostgreSQL | Done (Sprint 3) |
-| Server-side cart, idempotent checkout, mock payment, order cancellation | Designed (Sprint 1A), not implemented |
+| Guest and member cart, idempotent checkout with demonstration payment, order history, guest order tracking | Done (Sprint 4) |
+| Order administration and cancellation | Planned (Sprint 5) |
 
 ## Tech stack
 
@@ -97,7 +98,7 @@ The storefront is served by Vercel, which forwards `/api/v1` to the API on Rende
 | --- | --- |
 | `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (16 scenarios: authentication and the storefront flow) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (17 scenarios: authentication, guest checkout and member checkout) and guaranteed cleanup |
 
 ## Documentation
 

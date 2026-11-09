@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { SpinnerIcon, UserIcon } from '@/components/icons';
 import { Alert } from '@/components/ui/Alert';
@@ -13,6 +14,7 @@ import AuthNotice from './AuthNotice';
 export default function AccountMenu() {
   const dispatch = useAppDispatch();
   const auth = useAppSelector(state => state.auth);
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const button = useRef<HTMLButtonElement>(null);
@@ -75,6 +77,8 @@ export default function AccountMenu() {
           {auth.isLoggedIn ? (
             <>
               <p className="truncate px-4 pt-1.5 pb-2 text-[13px] text-stone-600">{auth.currentUser?.email}</p>
+              <button type="button" role="menuitem" tabIndex={-1} className={item}
+                onClick={() => choose(() => navigate('/account/orders'))}>Order history</button>
               <button type="button" role="menuitem" tabIndex={-1} disabled={!!auth.pending} className={item}
                 onClick={() => choose(() => dispatch(authActions.logout()))}>Log out</button>
             </>
@@ -84,6 +88,8 @@ export default function AccountMenu() {
                 onClick={() => choose(() => dispatch(authActions.openDialog('login')))}>Log in</button>
               <button type="button" role="menuitem" tabIndex={-1} disabled={!!auth.pending} className={item}
                 onClick={() => choose(() => dispatch(authActions.openDialog('register')))}>Create account</button>
+              <button type="button" role="menuitem" tabIndex={-1} className={item}
+                onClick={() => choose(() => navigate('/track-order'))}>Track an order</button>
             </>
           )}
         </div>

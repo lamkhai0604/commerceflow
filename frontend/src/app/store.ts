@@ -20,10 +20,10 @@ export const store = configureStore({
 sagaMiddleware.run(rootSaga);
 
 // Only the cart is persisted. Authentication state is never written to browser storage.
-let savedLines = store.getState().cart.lines;
+let saved = store.getState().cart;
 store.subscribe(() => {
   const { cart } = store.getState();
-  if (cart.lines !== savedLines) { savedLines = cart.lines; saveCart(cart); }
+  if (cart.lines !== saved.lines || cart.server !== saved.server) { saved = cart; saveCart(cart); }
 });
 
 export type AppDispatch = typeof store.dispatch;

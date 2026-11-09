@@ -1,0 +1,641 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow Cart, Checkout and Orders API
+  version: 1.3.0
+  description: Approved by CR-S4-01 (Product Owner, 2026-11-09) on top of the checkout policy v1.0 and ADR-006; implementation decisions S4-D01 and S4-D02. Supersedes
+    the cart and order paths of the v1.0 design baseline. All writes require the CSRF token from GET /auth/csrf. Money values are USD strings with two decimals.
+servers:
+- url: /api/v1
+paths:
+  /cart:
+    get:
+      tags:
+      - Cart
+      summary: Signed-in customer's cart
+      responses:
+        '200': &id001
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /cart/items:
+    post:
+      tags:
+      - Cart
+      summary: Add a product; quantities add up to at most 10
+      parameters:
+      - &id002
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+      responses:
+        '200': *id001
+        '400':
+          description: VALIDATION_ERROR
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: PRODUCT_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /cart/items/{itemId}:
+    parameters:
+    - name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      tags:
+      - Cart
+      summary: Set the quantity (1–10)
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+      responses:
+        '200': *id001
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 'RESOURCE_NOT_FOUND: no such item in this customer''s cart'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      tags:
+      - Cart
+      summary: Remove an item
+      parameters:
+      - *id002
+      responses:
+        '200': *id001
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /cart/merge:
+    post:
+      tags:
+      - Cart
+      summary: Merge the browser cart after log-in (CR-S4-01)
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+      responses:
+        '200':
+          description: Merged cart and products that could not be added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeCartResponse'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /orders:
+    get:
+      tags:
+      - Orders
+      summary: Own orders, newest first (up to 100)
+      responses:
+        '200':
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    post:
+      tags:
+      - Checkout
+      summary: Member checkout of the server cart
+      description: The cart is implicit; the stored outcome for the key is authoritative on replay, even after the cart was cleared.
+      parameters:
+      - *id002
+      - &id003
+        name: Idempotency-Key
+        in: header
+        required: true
+        description: 8–128 characters from [A-Za-z0-9_-]. Scoped to the customer (members) or the session (guests).
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCheckoutRequest'
+      responses:
+        '201': &id004
+          description: 'Order created, or an identical completed request replayed (header `Idempotent-Replayed: true`, same body byte for byte)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400': &id005
+          description: INVALID_REQUEST (key missing or malformed, unreadable body) or VALIDATION_ERROR (field errors)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '402': &id006
+          description: 'PAYMENT_DECLINED: terminal and replayable for the key; no order, stock or cart change'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403': &id007
+          description: CSRF_INVALID, or ACCESS_DENIED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409': &id008
+          description: CART_EMPTY; INSUFFICIENT_STOCK (terminal and replayable for the key; no partial order); IDEMPOTENCY_PAYLOAD_MISMATCH; IDEMPOTENCY_IN_PROGRESS
+            (with Retry-After)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503': &id009
+          description: 'PAYMENT_TEMPORARILY_UNAVAILABLE (with Retry-After): nothing is stored, the same key may be retried'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /checkout/guest:
+    post:
+      tags:
+      - Checkout
+      summary: Guest checkout (CR-S4-01)
+      description: For visitors who are not signed in; signed-in customers receive 403 ACCESS_DENIED and use POST /orders. Prices and stock come from the server.
+      parameters:
+      - *id002
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestCheckoutRequest'
+      responses:
+        '201': *id004
+        '400': *id005
+        '402': *id006
+        '403': *id007
+        '409': *id008
+        '503': *id009
+  /orders/{orderId}:
+    get:
+      tags:
+      - Orders
+      summary: One of the customer's own orders
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 'RESOURCE_NOT_FOUND: also for orders of other customers'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /orders/lookup:
+    post:
+      tags:
+      - Orders
+      summary: Track an order by number and checkout email (CR-S4-01)
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderLookupRequest'
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '403':
+          description: CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 'RESOURCE_NOT_FOUND: wrong number and wrong email are indistinguishable'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: 'TOO_MANY_REQUESTS: more than 10 lookups per session in 10 minutes'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    Money:
+      type: string
+      pattern: ^[0-9]+[.][0-9]{2}$
+    CartItem:
+      type: object
+      required:
+      - id
+      - productId
+      - slug
+      - name
+      - imageUrl
+      - unitPrice
+      - quantity
+      - lineTotal
+      - available
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        imageUrl:
+          type: string
+        unitPrice:
+          $ref: '#/components/schemas/Money'
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+        lineTotal:
+          $ref: '#/components/schemas/Money'
+        available:
+          type: boolean
+    Cart:
+      type: object
+      required:
+      - items
+      - currency
+      - estimatedTotal
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        currency:
+          const: USD
+        estimatedTotal:
+          $ref: '#/components/schemas/Money'
+          description: Sum of available lines
+    Line:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+    AddCartItemRequest:
+      $ref: '#/components/schemas/Line'
+    MergeCartRequest:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/Line'
+    MergeCartResponse:
+      type: object
+      required:
+      - cart
+      - skippedProductIds
+      properties:
+        cart:
+          $ref: '#/components/schemas/Cart'
+        skippedProductIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    ShippingAddress:
+      type: object
+      required:
+      - recipientName
+      - addressLine1
+      - city
+      - state
+      - postalCode
+      properties:
+        recipientName:
+          type: string
+          maxLength: 150
+        addressLine1:
+          type: string
+          maxLength: 200
+        addressLine2:
+          type:
+          - string
+          - 'null'
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          description: Two-letter US state or DC
+        postalCode:
+          type: string
+          pattern: ^[0-9]{5}(-[0-9]{4})?$
+        countryCode:
+          const: US
+    DeliveryMethod:
+      type: string
+      enum:
+      - STANDARD
+      - EXPRESS
+      description: STANDARD is free from 75.00, otherwise 9.00; EXPRESS is 19.00
+    PaymentScenario:
+      type: string
+      enum:
+      - APPROVE
+      - DECLINE
+      - UNAVAILABLE
+      description: Demonstration payment outcome (S4-D02); no card data is collected
+    MemberCheckoutRequest:
+      type: object
+      required:
+      - shippingAddress
+      - deliveryMethod
+      - paymentScenario
+      properties:
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        deliveryMethod:
+          $ref: '#/components/schemas/DeliveryMethod'
+        paymentScenario:
+          $ref: '#/components/schemas/PaymentScenario'
+    GuestCheckoutRequest:
+      type: object
+      required:
+      - email
+      - shippingAddress
+      - deliveryMethod
+      - paymentScenario
+      - items
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        deliveryMethod:
+          $ref: '#/components/schemas/DeliveryMethod'
+        paymentScenario:
+          $ref: '#/components/schemas/PaymentScenario'
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/Line'
+    OrderItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        productSlug:
+          type: string
+        imageUrl:
+          type: string
+        unitPrice:
+          $ref: '#/components/schemas/Money'
+        quantity:
+          type: integer
+        lineTotal:
+          $ref: '#/components/schemas/Money'
+    Order:
+      type: object
+      required:
+      - id
+      - orderNumber
+      - orderStatus
+      - paymentStatus
+      - deliveryMethod
+      - contactEmail
+      - subtotalAmount
+      - shippingAmount
+      - totalAmount
+      - currency
+      - items
+      - shippingAddress
+      - createdAt
+      - guest
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          pattern: ^CF-[A-Z0-9]{8}$
+        orderStatus:
+          enum:
+          - CONFIRMED
+          - SHIPPED
+          - DELIVERED
+          - CANCELLED
+        paymentStatus:
+          enum:
+          - PAID
+          - REFUNDED
+        deliveryMethod:
+          $ref: '#/components/schemas/DeliveryMethod'
+        contactEmail:
+          type: string
+        subtotalAmount:
+          $ref: '#/components/schemas/Money'
+        shippingAmount:
+          $ref: '#/components/schemas/Money'
+        totalAmount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          const: USD
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        createdAt:
+          type: string
+          format: date-time
+        guest:
+          type: boolean
+    OrderLookupRequest:
+      type: object
+      required:
+      - orderNumber
+      - email
+      properties:
+        orderNumber:
+          type: string
+          pattern: ^CF-[A-Za-z0-9]{8}$
+        email:
+          type: string
+          format: email
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        requestId:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string

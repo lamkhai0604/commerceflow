@@ -1,8 +1,11 @@
 import { test } from '../support/fixtures';
-import { check } from '../support/api';
+import { check, origin, register } from '../support/api';
+import { testUser } from '../support/testUsers';
 
-// Storefront flow on the demonstration catalog (SF-06 to SF-08). No account or API write is involved.
-test('E2E-16 browse, add to cart, check out and see the demo order confirmation', async ({ page }) => {
+const ORDER_NUMBER = /CF-[A-Z0-9]{8}/;
+
+// Storefront and checkout on the demonstration catalog (SF-06 to SF-08, CR-S4-01) against the real HTTPS stack.
+test('E2E-16 guest: browse, add to cart, choose guest checkout, place the order and track it', async ({ page }) => {
   await page.goto('/products?category=decor');
   await page.getByRole('heading', { level: 1, name: 'Decor' }).waitFor();
   await page.getByRole('link', { name: 'Stoneware Vase, Cream' }).click();
@@ -16,9 +19,11 @@ test('E2E-16 browse, add to cart, check out and see the demo order confirmation'
   const drawer = page.getByRole('dialog', { name: /Your cart/ });
   await drawer.getByText('Your order ships free.').waitFor();
   await drawer.getByRole('link', { name: 'Check out · $136.00' }).click();
+  const choice = page.getByRole('dialog', { name: 'How would you like to check out?' });
+  await choice.getByRole('button', { name: 'Continue as guest' }).click();
 
   await page.getByRole('heading', { level: 1, name: 'Checkout' }).waitFor();
-  await page.getByRole('button', { name: 'Place demo order · $136.00' }).click();
+  await page.getByRole('button', { name: 'Place order · $136.00' }).click();
   await page.getByText('Email address is required.').waitFor();
   check(await page.evaluate(() => document.activeElement?.id) === 'checkout-email', 'FOCUS_FIRST_INVALID');
 
@@ -28,9 +33,65 @@ test('E2E-16 browse, add to cart, check out and see the demo order confirmation'
   await page.getByLabel(/^City/).fill('Portland');
   await page.getByLabel(/^State/).selectOption('OR');
   await page.getByLabel(/^ZIP code/).fill('97201');
-  await page.getByRole('button', { name: 'Place demo order · $136.00' }).click();
 
+  // A declined demo payment creates no order; the customer can choose another outcome and try again.
+  await page.getByRole('radio', { name: /Payment declined/ }).check();
+  const declined = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/checkout/guest');
+  await page.getByRole('button', { name: 'Place order · $136.00' }).click();
+  check((await declined).status() === 402, 'DECLINE_STATUS');
+  await page.getByText(/The demo payment was declined/).waitFor();
+
+  await page.getByRole('radio', { name: /Payment approved/ }).check();
+  const placed = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/checkout/guest');
+  await page.getByRole('button', { name: 'Place order · $136.00' }).click();
+  check((await placed).status() === 201, 'ORDER_STATUS');
   await page.getByRole('heading', { name: 'Thank you, Storefront Tester.' }).waitFor();
-  check(/Your demo order CF-\d{6} is confirmed\./.test(await page.getByRole('status').filter({ hasText: 'Your demo order' }).innerText()), 'ORDER_CONFIRMED');
+  const confirmation = await page.getByRole('status').filter({ hasText: 'is confirmed' }).innerText();
+  const orderNumber = confirmation.match(ORDER_NUMBER)?.[0];
+  check(orderNumber, 'ORDER_CONFIRMED');
   check(await page.getByRole('button', { name: 'Cart, 0 items' }).isVisible(), 'CART_EMPTIED');
+
+  await page.getByRole('link', { name: 'track this order' }).click();
+  await page.getByLabel(/^Order number/).fill(orderNumber);
+  await page.getByLabel(/^Email address/).fill('E2E-Storefront@Example.com');
+  await page.getByRole('button', { name: 'Find order' }).click();
+  await page.getByRole('heading', { name: `Order ${orderNumber}` }).waitFor();
+  check(await page.getByText('Portland, OR 97201').isVisible(), 'TRACKED_ORDER');
+});
+
+test('E2E-17 member: a guest cart is merged at log-in, checked out from the account and listed in order history', async ({ page }) => {
+  const user = testUser();
+  await origin(page); await register(page, user);
+  await page.goto('/products/stoneware-mug');
+  await page.getByRole('heading', { level: 1, name: 'Stoneware Mug' }).waitFor();
+  await page.getByRole('button', { name: 'Add to cart · $18.00' }).click();
+  await page.getByRole('button', { name: 'Cart, 1 item' }).click();
+  await page.getByRole('dialog', { name: /Your cart/ }).getByRole('link', { name: /Check out/ }).click();
+  await page.getByRole('dialog', { name: 'How would you like to check out?' }).getByRole('button', { name: 'Log in' }).click();
+
+  await page.locator('#auth-email').fill(user.email);
+  await page.locator('#auth-password').fill(user.password);
+  const merged = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/cart/merge');
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  check((await merged).status() === 200, 'MERGE_STATUS');
+  await page.getByText('Your cart was saved to your account').waitFor();
+  await page.getByText(`Member checkout as ${user.email}.`, { exact: false }).waitFor();
+  check(await page.getByLabel(/^Email address/).count() === 0, 'MEMBER_EMAIL_FROM_ACCOUNT');
+
+  await page.getByLabel(/^Street address/).fill('2 Member Road');
+  await page.getByLabel(/^City/).fill('Austin');
+  await page.getByLabel(/^State/).selectOption('TX');
+  await page.getByLabel(/^ZIP code/).fill('73301');
+  const placed = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/orders' && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Place order · $27.00' }).click();
+  check((await placed).status() === 201, 'MEMBER_ORDER_STATUS');
+  const orderNumber = (await page.getByRole('status').filter({ hasText: 'is confirmed' }).innerText()).match(ORDER_NUMBER)?.[0];
+  check(orderNumber, 'MEMBER_ORDER_CONFIRMED');
+
+  await page.getByRole('link', { name: 'View order history' }).click();
+  await page.getByRole('heading', { level: 1, name: 'Order history' }).waitFor();
+  await page.getByRole('link', { name: new RegExp(orderNumber) }).click();
+  await page.getByRole('heading', { level: 1, name: `Order ${orderNumber}` }).waitFor();
+  check(await page.getByText('Austin, TX 73301').isVisible(), 'ORDER_DETAIL');
+  check(await page.getByRole('button', { name: 'Cart, 0 items' }).isVisible(), 'SERVER_CART_EMPTIED');
 });
