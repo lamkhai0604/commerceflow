@@ -22,7 +22,7 @@ public class AuthExceptionHandler {
             "productId", "quantity", "items", "items[].productId", "items[].quantity", "deliveryMethod", "paymentScenario",
             "shippingAddress", "shippingAddress.recipientName", "shippingAddress.addressLine1", "shippingAddress.addressLine2",
             "shippingAddress.city", "shippingAddress.state", "shippingAddress.postalCode", "shippingAddress.countryCode",
-            "orderNumber");
+            "orderNumber", "status", "reason", "name", "description", "price", "active", "stockQuantity", "expectedStockQuantity");
 
     @ExceptionHandler(AuthService.EmailConflictException.class)
     ResponseEntity<ProblemDetail> conflict(HttpServletRequest request) {

@@ -56,6 +56,27 @@ Prerequisite: `render.yaml` and `backend/Dockerfile` are on `master`.
 | Create account, log in, reload, log out | Each step confirms; the account name stays after reload |
 | Browser developer tools → Cookies | `SESSION` is Secure, HttpOnly, SameSite=Lax, Path=/ on the storefront domain |
 
+## Administrator accounts
+
+Decision [S5-D02](DECISIONS.md) (proposed). There is no way to become an administrator through the application; the Product Owner grants the role in the database.
+
+1. On the storefront, create a normal account with the email address you want to use and log in once to check it works.
+2. Neon dashboard → the project → **SQL Editor** (connected to the production database).
+3. Run this statement, replacing the email (it is not a secret; no password is involved):
+
+```sql
+INSERT INTO commerceflow.user_roles (user_id, role_id)
+SELECT u.id, r.id
+FROM commerceflow.users u, commerceflow.roles r
+WHERE u.email = 'you@example.com' AND r.name = 'ADMIN'
+ON CONFLICT DO NOTHING;
+```
+
+4. Expect `INSERT 0 1`. Log out and log in again: the account menu now shows **Administration**.
+5. To remove the role: `DELETE FROM commerceflow.user_roles WHERE role_id = (SELECT id FROM commerceflow.roles WHERE name = 'ADMIN') AND user_id = (SELECT id FROM commerceflow.users WHERE email = 'you@example.com');`
+
+The account keeps the CUSTOMER role, so it can also shop. Use a strong password: the administrator can cancel orders and change stock and prices.
+
 ## Operations
 
 - **Deploys:** merging to `master` deploys both Vercel and Render (Render `autoDeploy`). Database migrations run on API start; they must stay backward compatible with the previous API version during the switch.

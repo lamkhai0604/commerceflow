@@ -49,7 +49,7 @@ All checks passed on production after the Sprint 4 release:
 | B-06 | Accounts and orders created by live verification remain in the production database; there is no account or order deletion | Low | Administration sprint; synthetic accounts use `@example.com` addresses |
 | B-07 | A member's carts from several browsers are added together on log-in (capped at 10 per product) | Info | Behaviour agreed in CR-S4-01; the notice explains it |
 | B-08 | Free-tier API cold start takes about two minutes after 15 minutes without traffic | Info | Known hosting limit (S3-D01); the wake notice explains it |
-| B-09 | Order status stays "Confirmed": shipping, delivery and cancellation need administration | Info | REV-06, REV-10, Sprint 5 |
+| B-09 | Order status stays "Confirmed": shipping, delivery and cancellation need administration | Info | REV-10, Sprint 5 ([plan](../sprints/sprint-5.md)) |
 
 ## Flows reviewed
 

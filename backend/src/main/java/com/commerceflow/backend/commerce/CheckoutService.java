@@ -110,11 +110,23 @@ public class CheckoutService {
                 .list();
         Map<UUID, Product> byId = new LinkedHashMap<>();
         products.forEach(p -> byId.put(p.id(), p));
-        boolean fulfillable = lines.stream().allMatch(line -> {
+        // Products that cannot be fulfilled, with what is left (S5-D04). Nothing is changed unless every line fits.
+        var shortages = new ArrayList<Map<String, Object>>();
+        for (var line : lines) {
             Product product = byId.get(line.productId());
-            return product != null && product.active() && product.stock() >= line.quantity();
-        });
-        if (!fulfillable) return store(scope, key, fingerprint, 409, problem(ErrorCode.INSUFFICIENT_STOCK), null);
+            int available = product != null && product.active() ? product.stock() : 0;
+            if (available < line.quantity()) {
+                var shortage = new LinkedHashMap<String, Object>();
+                shortage.put("productId", line.productId());
+                shortage.put("productName", product == null ? null : product.name());
+                shortage.put("requested", line.quantity());
+                shortage.put("available", available);
+                shortages.add(shortage);
+            }
+        }
+        if (!shortages.isEmpty()) {
+            return store(scope, key, fingerprint, 409, problem(ErrorCode.INSUFFICIENT_STOCK, Map.of("shortages", shortages)), null);
+        }
 
         BigDecimal subtotal = BigDecimal.ZERO.setScale(2);
         for (var line : lines) {
@@ -202,12 +214,17 @@ public class CheckoutService {
     }
 
     private String problem(ErrorCode code) {
+        return problem(code, Map.of());
+    }
+
+    private String problem(ErrorCode code, Map<String, Object> extra) {
         var body = new LinkedHashMap<String, Object>();
         body.put("type", "about:blank");
         body.put("title", code.title);
         body.put("status", code.status);
         body.put("detail", code.detail);
         body.put("code", code.name());
+        body.putAll(extra);
         return write(body);
     }
 
