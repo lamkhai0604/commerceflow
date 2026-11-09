@@ -1,12 +1,14 @@
 import { useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { BagIcon, CloseIcon } from '@/components/icons';
-import { ButtonLink } from '@/components/ui/Button';
+import { ButtonLink, buttonClasses } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/Feedback';
 import { formatMoney, fromCents } from '@/lib/money';
 import { cartActions, selectCartCount, selectSubtotalCents } from '../cartSlice';
+import { CheckoutLink } from '@/features/checkout/CheckoutGate';
 import { CartLines } from './CartLines';
+import { CartSyncError } from './CartMessages';
 import { CartTotals, FreeShippingProgress, shippingCents } from './CartSummary';
 import { UndoRemoval } from './UndoRemoval';
 
@@ -37,12 +39,12 @@ export function CartDrawer() {
       ) : (
         <>
           <div className="px-6 pt-4"><FreeShippingProgress /></div>
-          <div className="flex-1 overflow-y-auto px-6 pb-4"><CartLines onNavigate={close} /></div>
+          <div className="flex-1 overflow-y-auto px-6 pb-4"><CartSyncError className="mt-4" /><CartLines onNavigate={close} /></div>
           <div className="border-t border-stone-200 bg-stone-50 px-6 pt-5 pb-6">
             <CartTotals />
-            <ButtonLink to="/checkout" onClick={close} size="lg" fullWidth className="mt-4.5">
+            <CheckoutLink onNavigate={close} className={buttonClasses({ size: 'lg', fullWidth: true, className: 'mt-4.5' })}>
               Check out · {formatMoney(fromCents(total))}
-            </ButtonLink>
+            </CheckoutLink>
             <ButtonLink to="/cart" onClick={close} variant="link" fullWidth className="mt-1">View full cart</ButtonLink>
           </div>
         </>

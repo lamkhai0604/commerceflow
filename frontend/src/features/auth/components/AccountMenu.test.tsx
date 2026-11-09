@@ -1,11 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import authReducer, { authActions, initialState } from '@/features/auth/authSlice';
 import AccountMenu from './AccountMenu';
 function setup(auth = initialState) {
   const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth } });
-  render(<Provider store={store}><AccountMenu /></Provider>); return store;
+  render(<Provider store={store}><MemoryRouter><AccountMenu /></MemoryRouter></Provider>); return store;
 }
 test('startup uses a quiet session placeholder then accessible account menu', () => {
   const store = setup(); expect(screen.getByLabelText('Checking your session')).toBeInTheDocument();

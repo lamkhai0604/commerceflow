@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { ServerCart } from '@/features/commerce/types';
 import { fromCents, toCents, type Money } from '@/lib/money';
 
 /** Cart lines keep a snapshot of what the customer saw when adding the product. */
@@ -9,6 +10,15 @@ export interface CartLine {
   unitPrice: Money;
   image: string;
   quantity: number;
+  /** Server cart item ID; present while a signed-in customer's cart is kept on the server. */
+  itemId?: string;
+  /** False when the product can no longer be bought (server cart only). */
+  available?: boolean;
+}
+
+export interface CartNotice {
+  title: string;
+  description?: string;
 }
 
 export interface CartState {
@@ -16,6 +26,14 @@ export interface CartState {
   drawerOpen: boolean;
   /** The most recently removed line, kept so the removal can be undone. Not persisted. */
   lastRemoved?: { line: CartLine; index: number };
+  /** True while the lines mirror the signed-in customer's server cart (never persisted in the browser). */
+  server?: boolean;
+  /** A one-off message for the customer, for example after the browser cart was merged on log-in. */
+  notice?: CartNotice;
+  /** Shown when a change could not be saved to the server cart; the cart is then reloaded from the server. */
+  syncError?: string;
+  /** Signed-out customers choose between guest and member checkout (CR-S4-01). */
+  checkoutChoice?: 'open' | 'awaitingSignIn';
 }
 
 export const MAX_QUANTITY = 10;
@@ -51,9 +69,32 @@ const cartSlice = createSlice({
       const removed = state.lastRemoved;
       state.lastRemoved = undefined;
       if (!removed || state.lines.some(l => l.productId === removed.line.productId)) return;
-      state.lines.splice(Math.min(removed.index, state.lines.length), 0, removed.line);
+      const line = state.server ? { ...removed.line, itemId: undefined } : removed.line;
+      state.lines.splice(Math.min(removed.index, state.lines.length), 0, line);
     },
     cleared(state) { state.lines = []; state.lastRemoved = undefined; },
+    /** Replaces the lines with the signed-in customer's server cart. */
+    serverCartLoaded(state, action: PayloadAction<ServerCart>) {
+      state.server = true;
+      state.syncError = undefined;
+      state.lines = action.payload.items.map(item => ({
+        productId: item.productId, slug: item.slug, name: item.name, unitPrice: item.unitPrice, image: item.imageUrl,
+        quantity: item.quantity, itemId: item.id, available: item.available,
+      }));
+    },
+    /** After log-out the account's cart stays on the server and is removed from this browser. */
+    signedOut(state) {
+      if (!state.server) return;
+      state.server = false; state.lines = []; state.lastRemoved = undefined; state.syncError = undefined;
+    },
+    syncFailed(state, action: PayloadAction<string>) { state.syncError = action.payload; },
+    syncErrorDismissed(state) { state.syncError = undefined; },
+    noticeShown(state, action: PayloadAction<CartNotice>) { state.notice = action.payload; },
+    noticeCleared(state) { state.notice = undefined; },
+    checkoutChoiceOpened(state) { state.checkoutChoice = 'open'; state.drawerOpen = false; },
+    checkoutChoiceClosed(state) { state.checkoutChoice = undefined; },
+    /** The customer chose to log in or create an account first; checkout continues once they are signed in. */
+    checkoutAwaitingSignIn(state) { state.checkoutChoice = 'awaitingSignIn'; },
     drawerOpened(state) { state.drawerOpen = true; },
     drawerClosed(state) { state.drawerOpen = false; },
   },
@@ -82,7 +123,11 @@ export function loadCart(): CartState {
   }
 }
 
+/** Only a signed-out visitor's cart is kept in the browser; a member's cart lives on the server. */
 export function saveCart(state: CartState) {
-  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ lines: state.lines })); }
+  try {
+    const lines = state.server ? [] : state.lines.map(({ itemId: _itemId, available: _available, ...line }) => line);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ lines }));
+  }
   catch { /* Storage unavailable: the cart still works for this visit. */ }
 }

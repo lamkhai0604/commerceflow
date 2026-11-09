@@ -3,6 +3,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
 import { CartDrawer } from '@/features/cart/components/CartDrawer';
+import { CartNoticeToast } from '@/features/cart/components/CartMessages';
+import { CheckoutGate } from '@/features/checkout/CheckoutGate';
 import { useServerWaking } from '@/lib/serverWake';
 import { Header, useNavLinks } from './Header';
 
@@ -33,6 +35,8 @@ export default function MainLayout() {
         <Footer />
       </div>
       <CartDrawer />
+      <CheckoutGate />
+      <CartNoticeToast />
     </ToastProvider>
   );
 }
@@ -71,7 +75,8 @@ function Footer() {
           <h2 className="text-sm font-semibold text-white">Help</h2>
           <div className={`mt-3.5 ${column}`}>
             <Link to="/cart" className={link}>Your cart</Link>
-            <Link to="/checkout" className={link}>Checkout</Link>
+            <Link to="/track-order" className={link}>Track an order</Link>
+            <Link to="/account/orders" className={link}>Order history</Link>
           </div>
         </nav>
         <nav aria-label="Project">
