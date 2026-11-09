@@ -38,7 +38,9 @@ export default function ProductPage() {
 }
 
 function ProductDetail({ product }: { product: StorefrontProduct }) {
-  const [quantity, setQuantity] = useState(1);
+  const limit = Math.min(MAX_QUANTITY, product.stockLeft ?? MAX_QUANTITY);
+  const [chosen, setQuantity] = useState(1);
+  const quantity = Math.min(chosen, limit);
   const addToCart = useAddToCart();
   const related = useAsync(() => listRelated(product), product.id);
 
@@ -66,13 +68,13 @@ function ProductDetail({ product }: { product: StorefrontProduct }) {
           {product.available ? (
             <>
               <div className="mt-8 flex flex-wrap gap-3">
-                <QuantityStepper size="lg" label="Quantity" value={quantity} max={MAX_QUANTITY} onChange={setQuantity} />
+                <QuantityStepper size="lg" label="Quantity" value={quantity} max={limit} onChange={setQuantity} />
                 <Button size="lg" className="flex-1 basis-56" onClick={() => addToCart(product, quantity)}>
                   Add to cart · {formatMoney(fromCents(toCents(product.price) * quantity))}
                 </Button>
               </div>
               <p className="mt-3.5 flex items-center gap-2 text-sm text-green-800">
-                <CheckIcon size={18} />In stock · Standard delivery in 3–5 business days
+                <CheckIcon size={18} />{product.stockLeft ? `Only ${product.stockLeft} left` : 'In stock'} · Standard delivery in 3–5 business days
               </p>
             </>
           ) : (

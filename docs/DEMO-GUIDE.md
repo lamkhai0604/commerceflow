@@ -68,12 +68,35 @@ A step-by-step trial of every implemented feature on `https://khai-shop.vercel.a
 | # | Do | Expect |
 | --- | --- | --- |
 | 6.1 | Add 4 × **Oak Nightstand** and check out with **Payment approved** | Message: some items are no longer available in the quantity you chose; no order is created |
-| 6.2 | Leave it there (do not buy 3) | Only 3 are in stock; buying them makes the product sold out for everyone until stock editing arrives in Sprint 5 |
+| 6.2 | Leave it there (do not buy 3) | The product page says "Only 3 left" and the message names the product and the 3 available. Buying them makes it sold out until an administrator edits the stock (section 8) |
 
 ## 7. Phone
 
 Repeat 1.1, 2.1, 3.1 to 3.5 and 5.6 on a phone. Expect: the menu opens from the ☰ button and includes search; filters open from **Filters**; nothing scrolls sideways.
 
+## 8. Administration (needs an administrator account)
+
+Create the account first and grant the role as described in [Administrator accounts](DEPLOYMENT.md#administrator-accounts) (one SQL statement in the Neon console; no password is shared). Then log out and log in again.
+
+| # | Do | Expect |
+| --- | --- | --- |
+| 8.1 | Account menu | **Administration** is listed (customers do not see it) |
+| 8.2 | Open **Administration** → **Orders** | Orders newest first with status, email and total; filter by status; search by order number or part of an email |
+| 8.3 | Open an order placed earlier (for example from step 3 or 5) | Items, address, totals, and a History list (empty until you change something) |
+| 8.4 | **Mark as shipped**, then **Mark as delivered** | Status changes each time; History shows who did it and when; no more buttons afterwards |
+| 8.5 | In the customer's account (Order history) open that order | The same status is shown to the customer |
+| 8.6 | Open another confirmed order → **Cancel order**, type a reason, confirm | Status Cancelled, payment Refunded, the reason appears in History; the products' stock goes back up by the ordered quantity |
+| 8.7 | Open the same cancelled order in a second tab and try to cancel again | Message that someone else already changed it; the current state is shown; stock does not go up twice |
+| 8.8 | **Products and stock**: change a stock number and **Save stock** | "Stock saved"; the storefront shows the new availability |
+| 8.9 | Set a product's stock to 3 | The product shows **Only 3 left** in the store and the quantity picker stops at 3 |
+| 8.10 | Set stock to 0 | The product shows **Sold out** in the store; set it back to a normal number afterwards |
+| 8.11 | **Edit details**: change the price to `20.50` | New orders use the new price; existing orders keep theirs |
+| 8.12 | **Hide** a product | It disappears from the store, search and carts; **Show** brings it back |
+| 8.13 | Log out and open `/admin` | "Log in to open administration" |
+| 8.14 | Log in with a normal (non-admin) account and open `/admin` | "You do not have access to administration" |
+
+Stock rule in the store (needs step 8.9 first): add 4 of the product with 3 left and check out. Expect a message naming the product and how many are available, and no order.
+
 ## What is not in this release
 
-Order status changes, cancellation and stock editing (administration) are planned for Sprint 5. Payments, emails, taxes and returns are demonstration text only.
+Creating new products (it needs image upload), customer self-cancellation, emails and real payments. Taxes and returns are demonstration text only.

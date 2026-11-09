@@ -75,12 +75,5 @@ export interface Line {
   quantity: number;
 }
 
-/** A failure the UI can safely show: no server detail, only the status, the documented code and Retry-After. */
-export interface CommerceFailure {
-  status?: number;
-  code?: string;
-  retryAfterSeconds?: number;
-}
-
-export const isCommerceFailure = (value: unknown): value is CommerceFailure =>
-  !!value && typeof value === 'object' && ('status' in value || 'code' in value) && !(value instanceof Error);
+export type { ApiFailure as CommerceFailure } from '@/lib/apiClient';
+export { isApiFailure as isCommerceFailure } from '@/lib/apiClient';

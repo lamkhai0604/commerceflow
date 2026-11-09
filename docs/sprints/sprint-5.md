@@ -11,15 +11,15 @@
 
 | ID | Task | Status |
 | --- | --- | --- |
-| S5-T01 | Records: sprint plan, decisions, OpenAPI v1.4 (administration and stock visibility), administrator setup guide | In progress |
-| S5-T02 | Flyway V9: administration audit log | Proposed |
-| S5-T03 | Admin orders: `GET /admin/orders` (status filter, search by number or email), `GET /admin/orders/{orderId}`, `PATCH /admin/orders/{orderId}/status` (CONFIRMED → SHIPPED → DELIVERED, CONFIRMED → CANCELLED; cancel restores stock exactly once) | Proposed |
-| S5-T04 | Admin products: `GET /admin/products`, `PATCH /admin/products/{productId}` (name, description, price, active), `PATCH /admin/products/{productId}/inventory` (set stock, optional compare-and-set) | Proposed |
-| S5-T05 | Stock visibility (B-01): `stockLeft` on catalog products at 5 or fewer, and `shortages` in the insufficient-stock response | Proposed |
-| S5-T06 | Tests: PostgreSQL integration suite for administration (REV-10 concurrent cancellation, REV-11 stock edit during checkout, role and CSRF checks, audit entries); required in CI | Proposed |
-| S5-T07 | Frontend administration console: orders (list, detail, ship, deliver, cancel with reason), stock and product editing; administration link only for administrators | Proposed |
-| S5-T08 | Frontend stock visibility: "Only N left" badge, quantity limit by stock, precise insufficient-stock message | Proposed |
-| S5-T09 | HTTPS E2E for the administrator flow (E2E-18); component tests | Proposed |
+| S5-T01 | Records: sprint plan, decisions, OpenAPI v1.4 (administration and stock visibility), administrator setup guide | Done |
+| S5-T02 | Flyway V9: administration audit log | Done |
+| S5-T03 | Admin orders: `GET /admin/orders` (status filter, search by number or email), `GET /admin/orders/{orderId}`, `PATCH /admin/orders/{orderId}/status` (CONFIRMED → SHIPPED → DELIVERED, CONFIRMED → CANCELLED; cancel restores stock exactly once) | Done |
+| S5-T04 | Admin products: `GET /admin/products`, `PATCH /admin/products/{productId}` (name, description, price, active), `PATCH /admin/products/{productId}/inventory` (set stock, optional compare-and-set) | Done |
+| S5-T05 | Stock visibility (B-01): `stockLeft` on catalog products at 5 or fewer, and `shortages` in the insufficient-stock response | Done |
+| S5-T06 | Tests: PostgreSQL integration suite for administration (REV-10 concurrent cancellation, REV-11 stock edit during checkout, role and CSRF checks, audit entries); required in CI | Done |
+| S5-T07 | Frontend administration console: orders (list, detail, ship, deliver, cancel with reason), stock and product editing; administration link only for administrators | Done |
+| S5-T08 | Frontend stock visibility: "Only N left" badge, quantity limit by stock, precise insufficient-stock message | Done |
+| S5-T09 | HTTPS E2E for the administrator flow (E2E-18); component tests | Done (E2E-18 runs in CI) |
 | S5-T10 | Release, live verification, product review and demonstration guide update | Proposed |
 
 ## Acceptance
@@ -36,3 +36,18 @@
 ## Out of scope
 
 Product creation (needs image upload and storage), customer self-cancellation (the approved baseline allows administrators only), email notifications, and refunds through a real payment provider. REV-06 (lease takeover) does not apply: S4-D01 replaced the lease with a transaction-scoped lock, so there is no stale worker to fence.
+
+## Backlog from the Sprint 4 review
+
+| ID | Status |
+| --- | --- |
+| B-01 insufficient-stock message and low-stock indicator | Done (S5-D04, S5-T05, S5-T08) |
+| B-02 live stock cannot be restocked | Done (stock editing, S5-T04, S5-T07) |
+| B-09 order status stays "Confirmed" | Done (S5-T03, S5-T07) |
+| B-03 to B-08 | Unchanged; see the [review](../reviews/sprint-4-product-review.md) |
+
+## Implementation notes
+
+- A status change is one conditional `UPDATE ... WHERE order_status = :from`; the second of two concurrent changes waits for the first and then matches no row, so it gets 409. Cancellation locks the order's products in ID order, the same order checkout uses, so the two cannot deadlock.
+- A stock edit locks the product row that checkout locks. The integration test races ten purchases against an edit and checks the invariant `final stock = new value - units sold after the edit`.
+- The administration screens are split into separate lazily loaded chunks (about 17 kB in total), so the storefront bundle is unchanged for customers.

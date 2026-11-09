@@ -13,7 +13,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 interface ApiCategory { id: string; name: string; slug: string; productCount: number }
 interface ApiProduct {
   id: string; name: string; slug: string; description: string; categoryId: string; price: Money; currency: 'USD';
-  available: boolean; imageUrl: string; imageAlt: string; details: string[];
+  available: boolean; stockLeft?: number; imageUrl: string; imageAlt: string; details: string[];
 }
 interface ApiProductPage { items: ApiProduct[]; page: number; size: number; totalElements: number }
 
