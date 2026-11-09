@@ -5,8 +5,11 @@ import CheckoutPage from '@/pages/CheckoutPage';
 import HomePage from '@/pages/HomePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import OrderConfirmationPage from '@/pages/OrderConfirmationPage';
+import OrderDetailPage from '@/pages/OrderDetailPage';
+import OrdersPage from '@/pages/OrdersPage';
 import ProductListPage from '@/pages/ProductListPage';
 import ProductPage from '@/pages/ProductPage';
+import TrackOrderPage from '@/pages/TrackOrderPage';
 
 export default function App() {
   return (
@@ -18,6 +21,9 @@ export default function App() {
         <Route path="cart" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="checkout/confirmation" element={<OrderConfirmationPage />} />
+        <Route path="account/orders" element={<OrdersPage />} />
+        <Route path="account/orders/:orderId" element={<OrderDetailPage />} />
+        <Route path="track-order" element={<TrackOrderPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

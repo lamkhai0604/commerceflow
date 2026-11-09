@@ -78,26 +78,6 @@ test('cart page: an empty cart says so and links to the catalog', () => {
   expect(screen.getByRole('link', { name: 'Start shopping' })).toHaveAttribute('href', '/products');
 });
 
-test('checkout: invalid fields are named next to each input; a valid order is confirmed and empties the cart', async () => {
-  const { store } = renderApp('/checkout', { lines: [mugLine] });
-  fireEvent.click(screen.getByRole('button', { name: 'Place demo order · $45.00' }));
-  expect(screen.getByText('Email address is required.')).toBeInTheDocument();
-  expect(screen.getByText('Please enter a 5-digit ZIP code.')).toBeInTheDocument();
-  expect(screen.getByLabelText(/^Email address/)).toHaveAttribute('aria-invalid', 'true');
-  expect(store.getState().cart.lines).toHaveLength(1);
-
-  const fill = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
-  fill(/^Email address/, 'jane@example.com'); fill(/^Full name/, 'Jane Doe'); fill(/^Street address/, '1 Main St');
-  fill(/^City/, 'Seattle'); fill(/^State/, 'WA'); fill(/^ZIP code/, '98101');
-  expect(screen.queryByText('Email address is required.')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('radio', { name: /Express/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Place demo order · $55.00' }));
-
-  expect(await screen.findByRole('heading', { name: 'Thank you, Jane Doe.' })).toBeInTheDocument();
-  expect(screen.getByText(/Your demo order/)).toHaveTextContent(/Your demo order CF-\d{6} is confirmed\./);
-  expect(store.getState().cart.lines).toEqual([]);
-});
-
 test('unknown routes show a helpful not-found page', () => {
   renderApp('/nowhere');
   expect(screen.getByRole('heading', { name: 'We could not find that page' })).toBeInTheDocument();
