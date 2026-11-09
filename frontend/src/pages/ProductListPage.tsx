@@ -171,7 +171,8 @@ function FilterPanel({ idPrefix, categories, query, update, clear }: FilterPanel
           {categories.map(c => (
             <label key={c.id} className={option}>
               <input type="radio" name={`${idPrefix}-room`} className={control} checked={query.category === c.slug} onChange={() => update({ category: c.slug })} />
-              {c.name}<span className="ml-auto text-[13px] text-stone-600">{c.productCount}</span>
+              {c.name}{!query.q && !query.price && !query.inStock
+                && <span className="ml-auto text-[13px] text-stone-600">{c.productCount}</span>}
             </label>
           ))}
         </div>

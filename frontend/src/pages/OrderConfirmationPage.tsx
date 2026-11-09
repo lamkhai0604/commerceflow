@@ -19,7 +19,7 @@ export default function OrderConfirmationPage() {
   if (!order) {
     return (
       <div className="mx-auto max-w-xl px-5 py-16">
-        <EmptyState title="No recent order" description="Order confirmations are shown once, right after checkout. You can still find an order with Track an order."
+        <EmptyState headingLevel={1} title="No recent order" description="Order confirmations are shown once, right after checkout. You can still find an order with Track an order."
           action={<ButtonLink to="/track-order">Track an order</ButtonLink>} />
       </div>
     );

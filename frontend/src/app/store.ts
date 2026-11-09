@@ -1,4 +1,4 @@
-import { Action, configureStore, ThunkAction } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import createSagaMiddleware from 'redux-saga';
 import { sanitizeAuthAction } from '@/features/auth/authDevTools';
 import { loadCart, saveCart } from '@/features/cart/cartSlice';
@@ -28,4 +28,3 @@ store.subscribe(() => {
 
 export type AppDispatch = typeof store.dispatch;
 export type { RootState };
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action<string>>;

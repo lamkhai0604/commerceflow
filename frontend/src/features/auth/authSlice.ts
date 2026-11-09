@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/app/store';
 import { AuthField, AuthFailure, LoginPayload, RegisterPayload, UserProfile } from './authModels';
 export type { LoginPayload } from './authModels';
 
@@ -60,7 +59,4 @@ const authSlice = createSlice({ name: 'auth', initialState, reducers: {
   dismissFeedback(state) { state.error = undefined; state.notice = undefined; },
 } });
 export const authActions = authSlice.actions;
-export const selectIsLoggedIn = (state: RootState) => state.auth.isLoggedIn;
-export const selectIsLogging = (state: RootState) => state.auth.pending === 'login';
-export const currentUser = (state: RootState) => state.auth.currentUser;
 export default authSlice.reducer;

@@ -19,9 +19,9 @@
 | S4-T05 | Orders: `GET /orders`, `GET /orders/{orderId}` (own orders only), `POST /orders/lookup` (order number and email, rate-limited) | Done |
 | S4-T06 | Frontend: member cart on the server and merge on log-in; guest-or-member choice at checkout; checkout against the API with every outcome explained; confirmation, order history, order detail and order tracking pages | Done |
 | S4-T07 | Tests: PostgreSQL integration suites for cart, checkout (including concurrent buyers and same-key requests) and orders; component tests; E2E for guest and member purchases | Done; HTTPS E2E (E2E-16 guest, E2E-17 member) runs in CI |
-| S4-T08 | Release and live verification on `https://khai-shop.vercel.app` | Proposed |
-| S4-T09 | Product review: design, user flows, business rules, repository structure and code quality, with findings and proposed fixes | Proposed |
-| S4-T10 | Demonstration guide: a step-by-step script covering every implemented feature for the Product Owner's hands-on trial; issues found go to the backlog | Proposed |
+| S4-T08 | Release and live verification on `https://khai-shop.vercel.app` | Done: all live checks passed on `master` `ab99c61` ([review](../reviews/sprint-4-product-review.md#live-verification-s4-t08)) |
+| S4-T09 | Product review: design, user flows, business rules, repository structure and code quality, with findings and proposed fixes | Done: [product review](../reviews/sprint-4-product-review.md); fixes R-01 to R-09 in the release candidate |
+| S4-T10 | Demonstration guide: a step-by-step script covering every implemented feature for the Product Owner's hands-on trial; issues found go to the backlog | Done: [demonstration guide](../DEMO-GUIDE.md) |
 
 ## Acceptance
 
@@ -35,3 +35,11 @@
 ## Out of scope
 
 Administration (order status changes, cancellation, inventory editing: REV-06, REV-10, REV-11) is planned for the next sprint. Email delivery and email verification are not part of the MVP.
+
+## Sprint review (2026-11-09)
+
+- Delivered: S4-T01 to S4-T10. PR lamkhai0604/commerceflow#34 merged into `develop` (`bfa2598`) after Backend CI (including `CommerceIntegrationTest`), Frontend CI and the HTTPS integration workflow (17/17 scenarios, including E2E-16 guest and E2E-17 member) passed; released to `master` (`ab99c61`) by the Product Owner through lamkhai0604/commerceflow#35.
+- Live verification passed: see the [product review](../reviews/sprint-4-product-review.md#live-verification-s4-t08).
+- Product review (S4-T09): one functional bug (the log-in notice covered the header controls) and eight minor findings fixed in the release candidate; nine backlog proposals for Sprint 5 planning.
+- Test data: live verification registered synthetic accounts (`live-s4-<timestamp>@example.com`) and placed demonstration orders.
+- Decisions S4-D01 to S4-D03 await Product Owner review.
