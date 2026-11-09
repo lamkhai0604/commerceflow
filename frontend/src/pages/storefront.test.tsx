@@ -72,6 +72,18 @@ test('cart page: removing a line can be undone, and totals reflect quantities', 
   expect(store.getState().cart.lines).toEqual([mugLine]);
 });
 
+test('listing: room counts are shown for the whole catalog', async () => {
+  renderApp('/products');
+  const [living] = await screen.findAllByRole('radio', { name: /^Living/ });
+  expect(living.closest('label')?.textContent).toMatch(/^Living\d+$/);
+});
+
+test('listing: room counts are hidden while a search narrows the list', async () => {
+  renderApp('/products?q=lamp');
+  const [living] = await screen.findAllByRole('radio', { name: /^Living/ });
+  expect(living.closest('label')?.textContent).toBe('Living');
+});
+
 test('cart page: an empty cart says so and links to the catalog', () => {
   renderApp('/cart');
   expect(screen.getByRole('heading', { name: 'Your cart is empty' })).toBeInTheDocument();

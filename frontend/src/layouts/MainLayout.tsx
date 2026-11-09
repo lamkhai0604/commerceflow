@@ -24,9 +24,9 @@ export default function MainLayout() {
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow">
           Skip to content
         </a>
-        <p className="bg-pine-700 px-4 py-2 text-center text-[13px] text-white">
+        <aside aria-label="Demo notice" className="bg-pine-700 px-4 py-2 text-center text-[13px] text-white">
           Demo store · Prices in US dollars · No real orders or payments are taken
-        </p>
+        </aside>
         <Header />
         <ServerWakeNotice />
         <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
@@ -68,7 +68,7 @@ function Footer() {
         <nav aria-label="Shop">
           <h2 className="text-sm font-semibold text-white">Shop</h2>
           <div className={`mt-3.5 ${column}`}>
-            {NAV_LINKS.slice(0, 4).map(l => <Link key={l.to} to={l.to} className={link}>{l.label}</Link>)}
+            {NAV_LINKS.map(l => <Link key={l.to} to={l.to} className={link}>{l.label}</Link>)}
           </div>
         </nav>
         <nav aria-label="Help">

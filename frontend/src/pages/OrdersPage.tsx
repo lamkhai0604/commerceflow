@@ -17,7 +17,7 @@ export function SignInRequired({ title, description }: { title: string; descript
   if (initializing) return <div className="mx-auto max-w-3xl px-5 py-12"><Skeleton className="h-40" /></div>;
   return (
     <div className="mx-auto max-w-xl px-5 py-16">
-      <EmptyState title={title} description={description} action={
+      <EmptyState headingLevel={1} title={title} description={description} action={
         <div className="flex flex-wrap justify-center gap-3">
           <Button onClick={() => dispatch(authActions.openDialog('login'))}>Log in</Button>
           <ButtonLink to="/track-order" variant="secondary">Track a guest order</ButtonLink>

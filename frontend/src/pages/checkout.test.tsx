@@ -138,7 +138,7 @@ test('order history: members see their orders; signed-out visitors are asked to 
 
 test('order history: signed-out visitors are offered log-in or guest tracking', () => {
   renderApp('/account/orders');
-  expect(screen.getByRole('heading', { name: 'Log in to see your orders' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1, name: 'Log in to see your orders' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Track a guest order' })).toHaveAttribute('href', '/track-order');
   expect(api.orders).not.toHaveBeenCalled();
 });
