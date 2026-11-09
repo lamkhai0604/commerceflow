@@ -37,8 +37,12 @@ export function describeCheckoutFailure(error: unknown): { message: string; keep
       return { message: 'The demo payment was declined. No order was created and nothing was charged. Choose another payment outcome to try again.', keepKey: false };
     case 'PAYMENT_TEMPORARILY_UNAVAILABLE':
       return { message: 'The demo payment service is temporarily unavailable. Nothing was charged. Please try again in a few seconds.', keepKey: true };
-    case 'INSUFFICIENT_STOCK':
-      return { message: 'Some items are no longer available in the quantity you chose. No order was created. Please review your cart and try again.', keepKey: false, reloadCart: true };
+    case 'INSUFFICIENT_STOCK': {
+      const detail = failure.shortages?.map(s => s.available > 0
+        ? `${s.productName}: you asked for ${s.requested}, only ${s.available} ${s.available === 1 ? 'is' : 'are'} available.`
+        : `${s.productName} is no longer available.`).join(' ');
+      return { message: `Some items are no longer available in the quantity you chose.${detail ? ` ${detail}` : ''} No order was created. Please review your cart and try again.`, keepKey: false, reloadCart: true };
+    }
     case 'CART_EMPTY':
       return { message: 'Your cart is empty, so there is nothing to order.', keepKey: false, reloadCart: true };
     case 'IDEMPOTENCY_IN_PROGRESS':

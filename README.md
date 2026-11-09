@@ -2,7 +2,7 @@
 
 An e-commerce web application: a React storefront and a Java Spring Boot backend with PostgreSQL, built sprint by sprint with a written design baseline, change control and automated tests.
 
-**Status:** Sprint 4 released. The live demo at https://khai-shop.vercel.app covers the catalog, guest and member carts, idempotent checkout with demonstration payments, order history and order tracking, on top of session authentication behind HTTPS. Try it with the [demonstration guide](docs/DEMO-GUIDE.md); see the [current status](docs/STATUS.md).
+**Status:** Sprint 4 released; Sprint 5 (administration and stock visibility) is in review. The live demo at https://khai-shop.vercel.app covers the catalog, guest and member carts, idempotent checkout with demonstration payments, order history and order tracking, on top of session authentication behind HTTPS. Try it with the [demonstration guide](docs/DEMO-GUIDE.md); see the [current status](docs/STATUS.md).
 
 ## Features
 
@@ -15,7 +15,7 @@ An e-commerce web application: a React storefront and a Java Spring Boot backend
 | HTTPS same-origin integration and E2E tests | Done (Sprint 1C) |
 | Public catalog API (categories, search, filters, sorting, paging) on PostgreSQL | Done (Sprint 3) |
 | Guest and member cart, idempotent checkout with demonstration payment, order history, guest order tracking | Done (Sprint 4) |
-| Order administration and cancellation | Planned (Sprint 5) |
+| Administration: orders (ship, deliver, cancel with stock restore), stock and product editing, audit log | Done (Sprint 5) |
 
 ## Tech stack
 
@@ -98,7 +98,7 @@ The storefront is served by Vercel, which forwards `/api/v1` to the API on Rende
 | --- | --- |
 | `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (17 scenarios: authentication, guest checkout and member checkout) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (18 scenarios: authentication, guest checkout, member checkout and administration) and guaranteed cleanup |
 
 ## Documentation
 

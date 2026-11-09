@@ -32,7 +32,7 @@ class CatalogControllerTest {
     static final UUID ID = UUID.fromString("aa6357c0-e6bc-5e13-86d9-d5326ecaf437");
     static final UUID CATEGORY = UUID.fromString("a97a7ff4-29e1-597a-a5fa-3430e170fdcb");
     static final Product MUG = new Product(ID, "Stoneware Mug", "stoneware-mug", "An everyday mug.", CATEGORY, "18.00", "USD",
-            true, "/images/products/stoneware-mug", "White stoneware mug", List.of("Holds 350 ml"));
+            true, "/images/products/stoneware-mug", "White stoneware mug", List.of("Holds 350 ml"), null);
 
     @Autowired MockMvc mvc;
     @MockitoBean CatalogRepository catalog;

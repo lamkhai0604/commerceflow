@@ -34,7 +34,7 @@
 
 ## Out of scope
 
-Administration (order status changes, cancellation, inventory editing: REV-06, REV-10, REV-11) is planned for the next sprint. Email delivery and email verification are not part of the MVP.
+Administration (order status changes, cancellation, inventory editing: REV-10, REV-11) is Sprint 5 ([plan](sprint-5.md)). REV-06 (lease takeover) does not apply: S4-D01 replaced the lease with a transaction-scoped lock. Email delivery and email verification are not part of the MVP.
 
 ## Sprint review (2026-11-09)
 

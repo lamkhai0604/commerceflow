@@ -46,7 +46,7 @@ function OrderList({ userId }: { userId: string }) {
             action={<ButtonLink to="/products">Start shopping</ButtonLink>} />
         )}
         {orders.status === 'success' && orders.data.length > 0 && (
-          <ul className="grid gap-3">
+          <ul className="grid grid-cols-1 gap-3">
             {orders.data.map(order => (
               <li key={order.id}>
                 <Link to={`/account/orders/${order.id}`}

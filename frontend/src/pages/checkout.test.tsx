@@ -152,3 +152,12 @@ test('checkout failures keep the idempotency key only when the outcome is not fi
   expect(keep(503, 'PAYMENT_TEMPORARILY_UNAVAILABLE')).toBe(true);
   expect(describeCheckoutFailure(new Error('network')).keepKey).toBe(true);
 });
+
+test('insufficient stock names each short product and what is left', () => {
+  const message = (shortages: Array<{ productName: string; requested: number; available: number }>) =>
+    describeCheckoutFailure({ status: 409, code: 'INSUFFICIENT_STOCK', shortages }).message;
+  expect(message([{ productName: 'Oak Nightstand', requested: 4, available: 3 }])).toContain('Oak Nightstand: you asked for 4, only 3 are available.');
+  expect(message([{ productName: 'Oak Nightstand', requested: 2, available: 1 }])).toContain('only 1 is available');
+  expect(message([{ productName: 'Stoneware Mug', requested: 1, available: 0 }])).toContain('Stoneware Mug is no longer available.');
+  expect(describeCheckoutFailure({ status: 409, code: 'INSUFFICIENT_STOCK' }).message).toMatch(/^Some items are no longer available in the quantity you chose\. No order was created/);
+});

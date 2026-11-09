@@ -17,6 +17,8 @@ export interface Product {
   price: Money;
   currency: 'USD';
   available: boolean;
+  /** Present only while 1 to 5 units remain (S5-D04). */
+  stockLeft?: number;
 }
 
 /**

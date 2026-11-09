@@ -6,10 +6,10 @@ export function check(condition: unknown, code: string): asserts condition {
   if (!condition) throw new Error(code); // Codes only: never stringify responses/credentials/cookies.
 }
 export async function origin(page: Page) { await page.goto('https://localhost:8443/api/v1/health'); }
-export async function api(page: Page, method: string, path: string, body?: unknown, token?: string) {
+export async function api(page: Page, method: string, path: string, body?: unknown, token?: string, extraHeaders: Record<string, string> = {}) {
   check(path.startsWith('/api/v1/'), 'API_PREFIX');
   return page.evaluate(async input => {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = { ...input.extraHeaders };
     if (input.body !== undefined) headers['Content-Type'] = 'application/json';
     if (input.token) headers['X-CSRF-TOKEN'] = input.token;
     const response = await fetch(input.path, { method: input.method, credentials: 'same-origin', headers,
@@ -17,7 +17,7 @@ export async function api(page: Page, method: string, path: string, body?: unkno
     let data: any = null;
     try { data = await response.json(); } catch { /* non-JSON handled as a safe failed condition */ }
     return { status: response.status, data, requestId: response.headers.get('X-Request-ID') };
-  }, { method, path, body, token });
+  }, { method, path, body, token, extraHeaders });
 }
 export async function csrf(page: Page) {
   const response = await api(page, 'GET', '/api/v1/auth/csrf');
@@ -62,6 +62,22 @@ export async function expectProblem(response: Awaited<ReturnType<typeof api>>, s
   check(headerValues.length === 1, 'MULTIPLE_CORRELATION_HEADERS');
   check(typeof response.data.requestId === 'string' && response.data.requestId === response.requestId
     && response.data.instance === `urn:uuid:${response.requestId}`, 'PROBLEM_CORRELATION');
+}
+/** Gives an account created by this run the ADMIN role, as the Product Owner does in production (S5-D02). */
+export async function grantAdmin(email: string) {
+  check(email.startsWith(`cf-${process.env.E2E_RUN_ID!.slice(0, 20)}-`) && email.endsWith('@e2e.invalid'), 'OWNED_ACCOUNT_REQUIRED');
+  check(process.env.TEST_DB_HOST === 'postgres' && !!process.env.TEST_DB_PASSWORD, 'ISOLATED_DATABASE_REQUIRED');
+  const pool = new Pool({ host: 'postgres', database: 'cf_s1c', user: 'cf_s1c', password: process.env.TEST_DB_PASSWORD, connectionTimeoutMillis: 5000 });
+  try {
+    const result = await pool.query(`INSERT INTO commerceflow.user_roles (user_id, role_id)
+      SELECT u.id, r.id FROM commerceflow.users u, commerceflow.roles r WHERE u.email = $1 AND r.name = 'ADMIN'`, [email]);
+    check(result.rowCount === 1, 'OWNED_ACCOUNT_REQUIRED');
+  } catch (error) {
+    if (error instanceof Error && error.message === 'OWNED_ACCOUNT_REQUIRED') throw error;
+    // Deliberately no `cause`: the driver error may carry connection details.
+    // eslint-disable-next-line preserve-caught-error
+    throw new Error('EXPIRY_FIXTURE_FAILED');
+  } finally { await pool.end(); }
 }
 export async function expireOwnedSession(email: string) {
   check(email.startsWith(`cf-${process.env.E2E_RUN_ID!.slice(0, 20)}-`) && email.endsWith('@e2e.invalid'), 'OWNED_ACCOUNT_REQUIRED');

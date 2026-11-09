@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
+import { createApiClient } from '@/lib/apiClient';
 import { createCommerceApi, newIdempotencyKey } from './commerceApi';
 
 const cart = { items: [], currency: 'USD', estimatedTotal: '0.00' };
@@ -9,7 +10,7 @@ function setup() {
     status: config.url === '/orders' && config.method === 'post' ? 201 : 200,
     data: config.url === '/auth/csrf' ? { headerName: 'X-CSRF-TOKEN', token: `token-${++token}` } : cart,
   }));
-  return { api: createCommerceApi(axios.create({ adapter })), adapter };
+  return { api: createCommerceApi(createApiClient(axios.create({ adapter }))), adapter };
 }
 const rejected = (status: number, data: unknown, headers: Record<string, string> = {}) => ({ isAxiosError: true, response: { status, data, headers } });
 const details = {
@@ -60,4 +61,15 @@ test('idempotency keys are random and match the documented pattern', () => {
   const keys = new Set(Array.from({ length: 50 }, newIdempotencyKey));
   expect(keys.size).toBe(50);
   for (const key of keys) expect(key).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
+});
+
+test('insufficient-stock failures carry only the documented shortage fields', async () => {
+  const { api, adapter } = setup();
+  adapter.mockResolvedValueOnce({ config: {} as InternalAxiosRequestConfig, status: 200, statusText: 'OK', headers: {}, data: { headerName: 'X-CSRF-TOKEN', token: 't' } });
+  adapter.mockRejectedValueOnce(rejected(409, { code: 'INSUFFICIENT_STOCK', detail: 'internal', shortages: [
+    { productId: 'p1', productName: 'Oak Nightstand', requested: 4, available: 3, secret: 'x' },
+    { productName: 'Bad', requested: 'many', available: 1 }, 'not an object'] }));
+  const failure = await api.checkoutGuest('key-12345678', { ...details, email: 'a@b.co', items: [] }).catch(e => e);
+  expect(failure).toEqual({ status: 409, code: 'INSUFFICIENT_STOCK', retryAfterSeconds: undefined,
+    shortages: [{ productName: 'Oak Nightstand', requested: 4, available: 3 }] });
 });

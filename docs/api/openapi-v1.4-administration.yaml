@@ -1,0 +1,436 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow Administration and Stock Visibility API
+  version: 1.4.0
+  description: 'Implements the administration endpoints of the approved design baseline (OpenAPI v1.0: orders, order status, product update, inventory) with the additions
+    recorded as S5-D01 to S5-D04. Every path under /admin requires an authenticated session with the ADMIN role. Writes require the CSRF token from GET /auth/csrf.
+    Money values are USD strings with two decimals.'
+servers:
+- url: /api/v1
+paths:
+  /admin/orders:
+    get:
+      tags:
+      - Administration
+      summary: List orders, newest first
+      parameters:
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/OrderStatus'
+        description: Case-insensitive
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 120
+        description: Exact order number, or part of the contact email
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+      responses:
+        '200':
+          description: Orders (same shape as GET /orders)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '400':
+          description: 'INVALID_REQUEST: unknown status, limit out of range, search too long'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': &id001
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403': &id002
+          description: ACCESS_DENIED (not an administrator) or CSRF_INVALID (write without the token)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /admin/orders/{orderId}:
+    get:
+      tags:
+      - Administration
+      summary: One order with its audit history
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Order and history, oldest change first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrder'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+  /admin/orders/{orderId}/status:
+    patch:
+      tags:
+      - Administration
+      summary: Change the order status
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - &id003
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      description: 'Allowed: CONFIRMED → SHIPPED, SHIPPED → DELIVERED, CONFIRMED → CANCELLED. Cancelling sets the payment status to REFUNDED and restores the ordered
+        stock in the same transaction, exactly once: concurrent cancellations produce one 200 and the rest 409. Any other change (including to CONFIRMED) returns
+        409 INVALID_STATE_TRANSITION and changes nothing.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChangeRequest'
+      responses:
+        '200':
+          description: Updated order with history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrder'
+        '400':
+          description: VALIDATION_ERROR or INVALID_REQUEST
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: INVALID_STATE_TRANSITION
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+  /admin/products:
+    get:
+      tags:
+      - Administration
+      summary: List products including inactive ones, with stock
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 120
+        description: Part of the product name
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+      responses:
+        '200':
+          description: Products in display order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminProduct'
+        '400':
+          description: INVALID_REQUEST
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+  /admin/products/{productId}:
+    patch:
+      tags:
+      - Administration
+      summary: Update or deactivate a product
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - *id003
+      description: At least one field. A deactivated product is hidden from the catalog and cannot be added to a cart or bought; existing orders keep their snapshot.
+        A price change applies to new orders only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPatchRequest'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '400':
+          description: VALIDATION_ERROR or INVALID_REQUEST (no field, unknown field)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+  /admin/products/{productId}/inventory:
+    patch:
+      tags:
+      - Administration
+      summary: Set the stock level
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - *id003
+      description: Sets an absolute value under the same row lock checkout uses, so an edit and a purchase are applied one after the other and neither is lost. With
+        `expectedStockQuantity` the edit applies only if the stock is still that value (409 STOCK_CHANGED otherwise).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryRequest'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '400':
+          description: VALIDATION_ERROR
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: STOCK_CHANGED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+components:
+  schemas:
+    Order:
+      description: As defined in OpenAPI v1.3 orders
+      type: object
+    OrderStatus:
+      enum:
+      - CONFIRMED
+      - SHIPPED
+      - DELIVERED
+      - CANCELLED
+    StatusChangeRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        reason:
+          type: string
+          maxLength: 200
+          description: Recorded in the audit log; blank is ignored
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorEmail:
+          type: string
+        action:
+          type: string
+          description: ORDER_SHIPPED, ORDER_DELIVERED, ORDER_CANCELLED, PRODUCT_UPDATED, STOCK_SET
+        reason:
+          type:
+          - string
+          - 'null'
+        details:
+          type: object
+          description: For orders {from, to}
+        createdAt:
+          type: string
+          format: date-time
+    AdminOrder:
+      type: object
+      required:
+      - order
+      - history
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+    AdminProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        price:
+          type: string
+          pattern: ^[0-9]+[.][0-9]{2}$
+        currency:
+          const: USD
+        stockQuantity:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+        imageUrl:
+          type: string
+    ProductPatchRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        price:
+          type: string
+          description: 0.01 to 99999.99, at most two decimals (a JSON number is also accepted)
+        active:
+          type: boolean
+    InventoryRequest:
+      type: object
+      required:
+      - stockQuantity
+      additionalProperties: false
+      properties:
+        stockQuantity:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        expectedStockQuantity:
+          type: integer
+          minimum: 0
+          maximum: 100000
+    CatalogProductAddition:
+      description: Added to the catalog Product of OpenAPI v1.2 (S5-D04)
+      type: object
+      properties:
+        stockLeft:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Present only while 1 to 5 units remain
+    InsufficientStockAddition:
+      description: Added to the 409 INSUFFICIENT_STOCK problem of POST /orders and POST /checkout/guest (S5-D04); stored and replayed with the outcome
+      type: object
+      properties:
+        shortages:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+              productName:
+                type:
+                - string
+                - 'null'
+              requested:
+                type: integer
+              available:
+                type: integer
+                description: 0 for an unavailable or inactive product
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: INVALID_STATE_TRANSITION and STOCK_CHANGED are new
+        requestId:
+          type: string
