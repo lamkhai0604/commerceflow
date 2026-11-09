@@ -43,7 +43,7 @@ function ServerWakeNotice() {
   if (!waking) return null;
   return (
     <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-900">
-      Starting the server. This can take up to a minute on the free hosting plan; the page will continue on its own.
+      Starting the server. This can take up to two minutes on the free hosting plan; the page will continue on its own.
     </div>
   );
 }
@@ -77,8 +77,8 @@ function Footer() {
         <nav aria-label="Project">
           <h2 className="text-sm font-semibold text-white">Project</h2>
           <div className={`mt-3.5 ${column}`}>
-            <a href="https://github.com/lamkhai0604/ecommerce-project" className={link}>Source on GitHub</a>
-            <a href="https://github.com/lamkhai0604/ecommerce-project/blob/master/frontend/public/images/SOURCES.md" className={link}>Image credits</a>
+            <a href="https://github.com/lamkhai0604/commerceflow" className={link}>Source on GitHub</a>
+            <a href="https://github.com/lamkhai0604/commerceflow/blob/master/frontend/public/images/SOURCES.md" className={link}>Image credits</a>
           </div>
         </nav>
       </div>
