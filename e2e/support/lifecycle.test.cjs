@@ -4,11 +4,13 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+// Scripts under test, resolved from this file so the suite runs from any working directory.
+const SCRIPTS = path.resolve(__dirname, '../scripts');
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cf-s1c-unit-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const scripts = path.join(root, 'e2e/scripts'); fs.mkdirSync(scripts, { recursive: true });
-  for (const file of ['common.sh', 'cleanup.sh']) fs.copyFileSync(path.resolve('e2e/scripts', file), path.join(scripts, file));
+  for (const file of ['common.sh', 'cleanup.sh']) fs.copyFileSync(path.join(SCRIPTS, file), path.join(scripts, file));
   return { root, run: id => spawnSync('bash', [path.join(scripts, 'cleanup.sh'), id], { encoding: 'utf8' }) };
 }
 test('cleanup rejects traversal IDs without creating state', t => {
@@ -124,7 +126,7 @@ test('linked evidence destination is rejected without overwriting outside files'
 });
 test('runner preserves browser failure and fails a passing browser when cleanup fails', t => {
   const f = fixture(t), scripts = path.join(f.root, 'e2e/scripts'), bin = path.join(f.root, 'bin');
-  fs.copyFileSync(path.resolve('e2e/scripts/run.sh'), path.join(scripts, 'run.sh'));
+  fs.copyFileSync(path.join(SCRIPTS, 'run.sh'), path.join(scripts, 'run.sh'));
   fs.writeFileSync(path.join(scripts, 'start.sh'), '#!/bin/bash\nexit 0\n');
   fs.writeFileSync(path.join(scripts, 'cleanup.sh'), '#!/bin/bash\nexit "$CLEANUP_EXIT"\n');
   fs.mkdirSync(bin); fs.writeFileSync(path.join(bin, 'docker'), '#!/bin/bash\nexit "$BROWSER_EXIT"\n');
@@ -151,8 +153,8 @@ test('secret deletion failure is reported and can be retried without losing evid
 // Startup fixtures have no host PATH fallback and stop at a fake port preflight.
 function startupFixture(t) {
   const f = fixture(t), scripts = path.join(f.root, 'e2e/scripts'), bin = path.join(f.root, 'bin');
-  fs.copyFileSync(path.resolve('e2e/scripts/start.sh'), path.join(scripts, 'start.sh'));
-  for (const file of ['build/index.html', 'backend/target/backend-0.0.1-SNAPSHOT.jar']) {
+  fs.copyFileSync(path.join(SCRIPTS, 'start.sh'), path.join(scripts, 'start.sh'));
+  for (const file of ['frontend/build/index.html', 'backend/target/backend-0.0.1-SNAPSHOT.jar']) {
     fs.mkdirSync(path.dirname(path.join(f.root, file)), { recursive: true });
     fs.writeFileSync(path.join(f.root, file), 'fixture');
   }

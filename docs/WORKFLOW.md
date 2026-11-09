@@ -16,7 +16,8 @@ Pull request descriptions state the problem, resulting behavior, verification (c
 | --- | --- |
 | Frontend | TypeScript 5 (strict), React 18, Vite 8, Tailwind CSS 4, React Router 6, Redux Toolkit with Redux-Saga for authentication state. Node.js 22.12 or later (CI uses Node 24) |
 | Backend | Java 21, Spring Boot 3.5, Spring Security with Spring Session JDBC, Flyway, PostgreSQL 17. See [backend/README.md](../backend/README.md) |
-| Frontend layout | `src/app` (bootstrap, store, routes), `src/features/<feature>` (state, API client, feature components), `src/components` (shared UI primitives), `src/layouts`, `src/pages`. Feature modules depend on shared components, never the reverse |
+| Repository layout | `frontend/` (React storefront), `backend/` (Spring Boot API), `e2e/` (HTTPS integration environment and browser tests, its own npm package), `docs/` (records). Each has its own dependency manifest and lockfile |
+| Frontend layout | Inside `frontend/`: `src/app` (bootstrap, store, routes), `src/features/<feature>` (state, API client, feature components), `src/components` (shared UI primitives), `src/layouts`, `src/pages`. Feature modules depend on shared components, never the reverse |
 | Imports | `@/` resolves to `src/` |
 | Styling | Tailwind utility classes and design tokens in `src/styles/index.css`. Shared components live in `src/components/ui`; no additional CSS or component frameworks. Modals use the native `<dialog>` element |
 | API access | Same-origin `/api/v1` (`VITE_API_BASE_URL` overrides it for builds). Credentials stay in HTTP-only session cookies; CSRF tokens stay in memory; nothing authentication-related is written to browser storage |
@@ -46,11 +47,8 @@ Tests assert the message text, and screenshots at desktop and 375 px width show 
 
 | Check | Command | Where it runs |
 | --- | --- | --- |
-| Type check | `npm run typecheck` | Local, Frontend CI, Integration CI |
-| Lint | `npm run lint` and `npm run lint:e2e` | Local, Frontend CI, Integration CI |
-| Unit and component tests | `npm test` (Vitest, jsdom) | Local, Frontend CI, Integration CI |
-| Production build | `npm run build` (output in `build/`) | Local, Frontend CI, Integration CI, Vercel |
-| E2E lifecycle tests | `npm run test:e2e:infra` | Local (Node 24), Integration CI |
+| Frontend type check, lint, tests, build | In `frontend/`: `npm run typecheck`, `npm run lint`, `npm test` (Vitest, jsdom), `npm run build` (output in `frontend/build/`) | Local, Frontend CI, Integration CI; Vercel builds |
+| E2E type check, lint, lifecycle tests | In `e2e/`: `npm run typecheck`, `npm run lint`, `npm run test:infra` | Local (Node 24), Integration CI |
 | Backend tests | `./mvnw clean verify` in `backend/` (requires Docker for PostgreSQL) | Backend CI |
 | HTTPS browser E2E | `bash e2e/scripts/run.sh <run-id>` (requires Docker); see the [runbook](testing/e2e-https-integration.md) | Integration CI |
 
