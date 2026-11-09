@@ -2,7 +2,9 @@ import { test } from '../support/fixtures';
 import { api, check, csrf, grantAdmin, login, origin, register } from '../support/api';
 import { testUser } from '../support/testUsers';
 
-const MUG = 'aa6357c0-e6bc-5e13-86d9-d5326ecaf437';
+// A product no other scenario buys, so stock assertions never depend on another test's data.
+const PRODUCT = '1740636e-8c74-5c5a-aeb4-4be836d68e3b';
+const PRODUCT_NAME = 'Dome Floor Lamp, Graphite';
 const ORDER_NUMBER = /CF-[A-Z0-9]{8}/;
 
 // Administration against the real HTTPS stack (Sprint 5): the role is granted in the database, like in production.
@@ -13,7 +15,7 @@ test('E2E-18 administrator ships and delivers an order, cancels another with sto
   const token = await csrf(page);
 
   async function buy(quantity: number) {
-    const added = await api(page, 'POST', '/api/v1/cart/items', { productId: MUG, quantity }, token);
+    const added = await api(page, 'POST', '/api/v1/cart/items', { productId: PRODUCT, quantity }, token);
     check(added.status === 200, 'FIXTURE_CART');
     const placed = await api(page, 'POST', '/api/v1/orders', {
       shippingAddress: { recipientName: 'Admin Tester', addressLine1: '1 Test Way', city: 'Portland', state: 'OR', postalCode: '97201' },
@@ -23,7 +25,7 @@ test('E2E-18 administrator ships and delivers an order, cancels another with sto
     return placed.data.orderNumber as string;
   }
   async function stock() {
-    const list = await api(page, 'GET', '/api/v1/admin/products?q=stoneware%20mug');
+    const list = await api(page, 'GET', '/api/v1/admin/products?q=dome%20floor%20lamp');
     check(list.status === 200 && list.data?.length === 1, 'ADMIN_PRODUCTS');
     return list.data[0].stockQuantity as number;
   }
@@ -64,8 +66,8 @@ test('E2E-18 administrator ships and delivers an order, cancels another with sto
 
   // Stock editing.
   await page.goto('/admin/products');
-  await page.locator(`#stock-${MUG}`).fill('30');
-  await page.getByRole('form', { name: 'Stock for Stoneware Mug' }).getByRole('button', { name: 'Save stock' }).click();
+  await page.locator(`#stock-${PRODUCT}`).fill('30');
+  await page.getByRole('form', { name: `Stock for ${PRODUCT_NAME}` }).getByRole('button', { name: 'Save stock' }).click();
   await page.getByText('Stock saved').waitFor();
   check(await stock() === 30, 'STOCK_EDITED');
 
