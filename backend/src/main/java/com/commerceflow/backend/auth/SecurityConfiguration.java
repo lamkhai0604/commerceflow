@@ -78,6 +78,8 @@ public class SecurityConfiguration {
                         // Public catalog reads (FR-06 to FR-08); catalog writes stay under /api/v1/admin/**.
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/products", "/api/v1/products/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        // Guest checkout and order lookup (CR-S4-01); CSRF protection still applies.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/checkout/guest", "/api/v1/orders/lookup").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/account/**", "/api/v1/cart/**", "/api/v1/orders/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated())

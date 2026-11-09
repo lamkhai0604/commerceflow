@@ -30,6 +30,8 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | S3-D01 | Host the Spring Boot API on a Render free web service (Docker) and PostgreSQL on a Neon free project; no paid tiers. The free web service sleeps after 15 minutes without traffic, and the storefront tells visitors while it wakes | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
 | S3-D02 | Keep one origin in production: Vercel rewrites `/api/v1/*` to the Render service, so session cookies stay first-party and the existing CSRF design (D3) applies unchanged | Approved — Product Owner | 2026-11-08 | [Deployment](DEPLOYMENT.md) |
 | S3-D03 | Repository layout: the storefront moves to `frontend/`, the browser E2E suite becomes its own npm package in `e2e/`, and the root keeps only records and hosting configuration | Approved — Product Owner | 2026-11-08 | [WORKFLOW.md](WORKFLOW.md) |
+| S4-D01 | Checkout runs in one PostgreSQL transaction guarded by a transaction-scoped advisory lock per idempotency key. Payment is an in-process simulation with no external side effect, so a crash before commit leaves nothing behind and a crash after commit is replayed from the stored outcome; the lease, fencing and recovery-worker proposal of the checkout reliability supplement is not needed for this scope | Accepted — implementing contributor, within the approved policy (D1, D2, ADR-006); for Product Owner review at the Sprint 4 review | 2026-11-09 | [Sprint 4](sprints/sprint-4.md) |
+| S4-D02 | Demonstration payment outcomes are chosen on the checkout page (approved, declined, temporarily unavailable) so each D2 path can be shown. Declined and insufficient-stock results are terminal and replayable for the key; temporarily unavailable is not stored, so the same key can be retried | Accepted — implementing contributor, within the approved policy (D1, D2, ADR-006); for Product Owner review at the Sprint 4 review | 2026-11-09 | [Sprint 4](sprints/sprint-4.md) |
 
 ## Change requests
 
@@ -45,6 +47,7 @@ Decision authority: Tech Lead / Product Owner (lamkhai0604).
 | CR-S1C-02 | Fail-closed cleanup for the E2E environment | Implemented | 2026-11-04 | [Verification](sprints/sprint-1c/cr-s1c-02-verification.md) |
 | CR-S1C-03 | Stop tracking the root `.env`; move public metadata to the README | Implemented | 2026-11-05 | [CR-S1C-03](change-requests/CR-S1C-03-environment-files.md) |
 | CR-S3-01 | Catalog fields and filters for the storefront: product `slug`, image, details; category product count; price and availability filters; lookup by slug | Approved — Product Owner | 2026-11-08 | [CR-S3-01](change-requests/CR-S3-01-catalog-storefront-fields.md) |
+| CR-S4-01 | Guest cart and guest checkout; choice of guest or member at checkout; cart merge on log-in; guest order lookup; guest orders not attached to later accounts | Approved — Product Owner | 2026-11-09 | [CR-S4-01](change-requests/CR-S4-01-guest-cart-and-checkout.md) |
 
 ### CR-01 — CSRF route
 
