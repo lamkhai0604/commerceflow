@@ -44,6 +44,25 @@ public class OrderQueries {
                 .param("number", orderNumber).param("email", email).query(this::order).optional();
     }
 
+    /** Administration list: newest first, optionally one status and a search on order number or email. */
+    public List<Order> adminList(String status, String search, int limit) {
+        var sql = new StringBuilder("SELECT " + ORDER_COLUMNS + FROM + " WHERE true");
+        var statement = new java.util.HashMap<String, Object>();
+        if (status != null) { sql.append(" AND o.order_status = :status"); statement.put("status", status); }
+        if (search != null) {
+            sql.append(" AND (o.order_number = :number OR o.contact_email LIKE :email ESCAPE '\\')");
+            statement.put("number", search.toUpperCase(java.util.Locale.ROOT));
+            statement.put("email", "%" + search.toLowerCase(java.util.Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
+        }
+        sql.append(" ORDER BY o.created_at DESC, o.id LIMIT :limit");
+        statement.put("limit", limit);
+        return jdbc.sql(sql.toString()).params(statement).query(this::order).list();
+    }
+
+    public Optional<Order> find(UUID orderId) {
+        return jdbc.sql("SELECT " + ORDER_COLUMNS + FROM + " WHERE o.id = :id").param("id", orderId).query(this::order).optional();
+    }
+
     Order byId(UUID orderId) {
         return jdbc.sql("SELECT " + ORDER_COLUMNS + FROM + " WHERE o.id = :id").param("id", orderId).query(this::order).single();
     }

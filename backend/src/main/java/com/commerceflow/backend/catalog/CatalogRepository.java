@@ -90,7 +90,12 @@ public class CatalogRepository {
         return new Product(rs.getObject("id", UUID.class), rs.getString("name"), rs.getString("slug"),
                 rs.getString("description"), rs.getObject("category_id", UUID.class),
                 CatalogModels.money(rs.getBigDecimal("price")), "USD", rs.getInt("stock_quantity") > 0,
-                rs.getString("image_path"), rs.getString("image_alt"), textArray(rs.getArray("details")));
+                rs.getString("image_path"), rs.getString("image_alt"), textArray(rs.getArray("details")),
+                stockLeft(rs.getInt("stock_quantity")));
+    }
+
+    private static Integer stockLeft(int stock) {
+        return stock > 0 && stock <= CatalogModels.LOW_STOCK_THRESHOLD ? stock : null;
     }
 
     private static List<String> textArray(Array array) throws SQLException {

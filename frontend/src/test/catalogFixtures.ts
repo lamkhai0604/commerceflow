@@ -19,9 +19,9 @@ const [LIVING, KITCHEN, BEDROOM, BATH, LIGHTING, DECOR] = DEMO_CATEGORIES.map(c 
 
 const product = (
   id: string, slug: string, name: string, categoryId: string, price: string, description: string,
-  details: string[], imageAlt: string, available = true,
+  details: string[], imageAlt: string, available = true, stockLeft?: number,
 ): DemoProduct => ({
-  id, slug, name, categoryId, price, description, details, imageAlt, available,
+  id, slug, name, categoryId, price, description, details, imageAlt, available, ...(stockLeft ? { stockLeft } : {}),
   currency: 'USD', image: `/images/products/${slug}`,
 });
 
@@ -62,7 +62,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   product('8077c3bc-eb37-595d-9586-365281a82e66', 'oak-nightstand', 'Oak Nightstand', BEDROOM, '210.00',
     'A small nightstand with one soft-close drawer and an open shelf, in white oak and painted ash.',
     ['Width 45 cm, depth 38 cm, height 52 cm', 'Soft-close drawer'],
-    'White nightstand with an oak drawer beside a bed'),
+    'White nightstand with an oak drawer beside a bed', true, 3),
   product('663acde6-142e-5e44-b080-2b06e84d2bc9', 'concrete-bottle-vases-set-of-3', 'Concrete Bottle Vases, Set of 3', DECOR, '58.00',
     'Three cast-concrete bottles in graduated heights, sealed inside for dried arrangements.',
     ['Heights 18, 24 and 30 cm', 'Not watertight; for dried stems'],

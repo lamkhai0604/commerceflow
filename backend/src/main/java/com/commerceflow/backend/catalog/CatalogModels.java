@@ -10,8 +10,12 @@ public final class CatalogModels {
 
     public record Category(UUID id, String name, String slug, int productCount) {}
 
+    /** Products with at most this many units left report `stockLeft` (S5-D04). */
+    public static final int LOW_STOCK_THRESHOLD = 5;
+
     public record Product(UUID id, String name, String slug, String description, UUID categoryId, String price,
-            String currency, boolean available, String imageUrl, String imageAlt, List<String> details) {}
+            String currency, boolean available, String imageUrl, String imageAlt, List<String> details,
+            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Integer stockLeft) {}
 
     public record ProductPage(List<Product> items, int page, int size, long totalElements) {}
 

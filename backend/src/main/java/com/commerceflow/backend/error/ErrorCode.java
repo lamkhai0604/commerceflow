@@ -16,6 +16,8 @@ public enum ErrorCode {
     IDEMPOTENCY_PAYLOAD_MISMATCH(409, "Checkout request changed", "This checkout key was already used with different details; start a new checkout"),
     PAYMENT_DECLINED(402, "Payment declined", "The demonstration payment was declined; no order was created"),
     PAYMENT_TEMPORARILY_UNAVAILABLE(503, "Payment temporarily unavailable", "The demonstration payment service is unavailable; no order was created"),
+    INVALID_STATE_TRANSITION(409, "Invalid status change", "This order cannot move to that status from its current status"),
+    STOCK_CHANGED(409, "Stock changed", "The stock level changed since it was loaded; review the current value and try again"),
     TOO_MANY_REQUESTS(429, "Too many requests", "Too many attempts; wait a few minutes and try again"),
     INTERNAL_ERROR(500, "Internal server error", "The request could not be completed"),
     SERVICE_UNAVAILABLE(503, "Service unavailable", "The service is temporarily unavailable"),

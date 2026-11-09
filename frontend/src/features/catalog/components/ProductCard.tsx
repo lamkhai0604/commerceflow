@@ -21,6 +21,7 @@ export function ProductCard({ product, headingLevel: Heading = 'h3', showAddToCa
       <Link to={href} tabIndex={-1} aria-hidden="true" className="relative block">
         <ProductImage src={product.image} alt="" sizes={sizes} />
         {!product.available && <span className="absolute top-3 left-3"><Badge tone="muted">Sold out</Badge></span>}
+        {product.available && product.stockLeft && <span className="absolute top-3 left-3"><Badge tone="accent">Only {product.stockLeft} left</Badge></span>}
       </Link>
       <p className="mt-3.5 text-[13px] text-stone-600">{product.categoryName}</p>
       <Heading className="mt-1 text-base font-semibold">
