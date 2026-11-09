@@ -72,7 +72,7 @@ function ProductDetail({ product }: { product: StorefrontProduct }) {
                 </Button>
               </div>
               <p className="mt-3.5 flex items-center gap-2 text-sm text-green-800">
-                <CheckIcon size={18} />In stock, ships in 2–3 business days
+                <CheckIcon size={18} />In stock · Standard delivery in 3–5 business days
               </p>
             </>
           ) : (

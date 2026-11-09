@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Alert } from '@/components/ui/Alert';
 import { authActions } from '@/features/auth/authSlice';
@@ -30,7 +31,9 @@ export default function AuthNotice({ floating = false }: { floating?: boolean })
       {notice}
     </Alert>
   );
+  // The floating notice is rendered on the body: the sticky header creates a containing block (backdrop blur)
+  // that would otherwise pin it over the header controls.
   return floating
-    ? <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center sm:inset-x-auto sm:right-6 sm:bottom-6">{alert}</div>
+    ? createPortal(<div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center sm:inset-x-auto sm:right-6 sm:bottom-6">{alert}</div>, document.body)
     : alert;
 }

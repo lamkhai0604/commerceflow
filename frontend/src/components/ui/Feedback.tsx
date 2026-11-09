@@ -16,11 +16,12 @@ interface EmptyStateProps {
 }
 
 /** Explains why nothing is shown and offers the next step. */
-export function EmptyState({ title, description, icon, action, className }: EmptyStateProps) {
+export function EmptyState({ title, description, icon, action, className, headingLevel = 2 }: EmptyStateProps & { headingLevel?: 1 | 2 }) {
+  const Heading = headingLevel === 1 ? 'h1' : 'h2';
   return (
     <div className={cn('flex flex-col items-center rounded-(--radius-card) border border-dashed border-stone-300 px-6 py-12 text-center', className)}>
       {icon && <div className="text-stone-600">{icon}</div>}
-      <h2 className="mt-3 text-lg font-semibold text-stone-900">{title}</h2>
+      <Heading className="mt-3 text-lg font-semibold text-stone-900">{title}</Heading>
       <p className="mt-1 max-w-sm text-[15px] text-stone-600">{description}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>

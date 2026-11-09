@@ -67,7 +67,7 @@ export default function CheckoutPage() {
   if (lines.length === 0) {
     return (
       <div className="mx-auto max-w-xl px-5 py-16">
-        <EmptyState icon={<BagIcon size={36} />} title="Your cart is empty" description="Add a product before checking out."
+        <EmptyState headingLevel={1} icon={<BagIcon size={36} />} title="Your cart is empty" description="Add a product before checking out."
           action={<ButtonLink to="/products">Start shopping</ButtonLink>} />
       </div>
     );

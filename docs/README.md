@@ -3,6 +3,8 @@
 | Section | Contents |
 | --- | --- |
 | [Current status](STATUS.md) | Active sprint, revision, blockers and next action |
+| [Demonstration guide](DEMO-GUIDE.md) | Step-by-step trial of every implemented feature on the live site |
+| [Sprint 4 product review](reviews/sprint-4-product-review.md) | Design, flow, business-rule and code review of the Sprint 4 release, with fixes and backlog proposals |
 | [Workflow](WORKFLOW.md) | Branching, permissions, engineering profile and verification commands |
 | [Decision log](DECISIONS.md) | Architecture decisions and change requests with status and links |
 | [Requirements](requirements/) | SRS v1.1, the approved design addendum (checkout reliability, security) and the [storefront requirements](requirements/storefront-requirements.md) |
