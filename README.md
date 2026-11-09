@@ -114,4 +114,4 @@ Contributors start at [AGENTS.md](AGENTS.md). Project documentation starts at [d
 ## Project information
 
 - **Author:** Lam Khai
-- **Repository:** https://github.com/lamkhai0604/ecommerce-project
+- **Repository:** https://github.com/lamkhai0604/commerceflow

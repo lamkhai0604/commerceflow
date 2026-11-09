@@ -4,10 +4,10 @@ Updated: 2026-11-08
 
 | Field | Value |
 | --- | --- |
-| Production (`master`) | `16794a3` — Sprint 2 release (redesigned storefront on demonstration data) |
-| Integration (`develop`) | `9f0971d` — Sprint 3 catalog API (PR #25) |
+| Production (`master`) | `19f13ec` — Sprint 3 release (catalog API); storefront `https://khai-shop.vercel.app`, API on Render |
+| Integration (`develop`) | `7267f2f` — repository layout (PR #29) |
 | Active sprint | [Sprint 3 — Catalog API and hosted backend](sprints/sprint-3.md) |
-| Active branch | none; Sprint 3 release pending, then S3-T07 (service setup) |
+| Active branch | `fix/render-url`: storefront rewrite to the actual Render URL |
 
 ## Completed in Sprint 3 so far
 
@@ -16,9 +16,9 @@ Updated: 2026-11-08
 
 ## Known limitations
 
-- Until the Product Owner creates the Render and Neon services (S3-T07), the production site has no API: the catalog shows its load-error state and sign-in cannot complete.
+- Production `/api/v1` points at the wrong Render host until the rewrite correction is released; the catalog shows its load-error state meanwhile.
 - Cart and checkout still run in the browser (server-side cart and orders are the next sprint).
 
 ## Next action
 
-The Product Owner merges the Sprint 3 release pull request into `master`, then create the Neon and Render services following [DEPLOYMENT.md](DEPLOYMENT.md) and verify the live site.
+Merge the rewrite correction into `develop`, release it to `master`, then verify catalog, sign-up, log-in and cookies on `https://khai-shop.vercel.app`.
