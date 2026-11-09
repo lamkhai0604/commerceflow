@@ -2,6 +2,14 @@
 
 Decisions: S3-D01 (free-tier hosting), S3-D02 (single origin through Vercel), D3 (sessions, cookies, CSRF).
 
+## Current services
+
+| Service | Address |
+| --- | --- |
+| Storefront (Vercel production) | `https://khai-shop.vercel.app` |
+| API (Render) | `https://commerceflow-api-4cx8.onrender.com` (reached through the storefront's `/api/v1`) |
+| Database (Neon) | Project `commerceflow`, AWS US East; connection details only in the Render dashboard |
+
 ## Topology
 
 ```mermaid
@@ -16,7 +24,7 @@ The browser only talks to the Vercel origin. Vercel forwards `/api/v1/*` to the 
 | Component | Plan | Behaviour to expect |
 | --- | --- | --- |
 | Vercel | Hobby | Deploys `master` to production and every branch to a preview |
-| Render web service `commerceflow-api` | Free | Sleeps after 15 minutes without traffic; the first request then takes up to about a minute. The storefront retries read requests and shows "Starting the server" meanwhile |
+| Render web service `commerceflow-api` | Free | Sleeps after 15 minutes without traffic; a cold start then takes about two minutes (121–135 s measured on 2026-11-08). The storefront retries read requests and shows "Starting the server" meanwhile |
 | Neon project | Free | 1 GB storage; compute suspends when idle and resumes on the next connection |
 
 ## One-time setup (Product Owner)
@@ -33,11 +41,11 @@ Secrets are entered only in the provider dashboards. They are never committed, p
 
 Prerequisite: `render.yaml` and `backend/Dockerfile` are on `master`.
 
-1. Sign in at render.com with GitHub and allow access to `lamkhai0604/ecommerce-project`.
+1. Sign in at render.com with GitHub and allow access to `lamkhai0604/commerceflow`.
 2. **New → Blueprint**, choose the repository; Render reads `render.yaml` and proposes the service `commerceflow-api` on the **Free** plan.
 3. Enter the three values when asked: `SPRING_DATASOURCE_URL` (the JDBC URL above), `POSTGRES_USER` (the Neon role) and `POSTGRES_PASSWORD`. Apply.
-4. Wait for the first build (several minutes). Open `https://commerceflow-api.onrender.com/api/v1/health`; it must return `{"status":"UP"}`. Flyway creates the schema and the demonstration catalog on first start.
-5. If Render assigned a different URL (the name was taken), the rewrite destination in `vercel.json` must be updated to that URL.
+4. Wait for the first build (several minutes). Open `https://<service URL>/api/v1/health`; it must return `{"status":"UP"}`. Flyway creates the schema and the demonstration catalog on first start.
+5. Render appends a suffix when the service name is already taken. The rewrite destination in `vercel.json` must match the service's actual URL.
 
 ### 3. Verification on the production site
 

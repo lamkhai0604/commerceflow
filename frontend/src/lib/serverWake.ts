@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useSyncExternalStore } from 'react';
 
 /*
- * The hosted API runs on a free instance that sleeps when idle (S3-D01) and can take about a minute to start.
+ * The hosted API runs on a free instance that sleeps when idle (S3-D01); a cold start measured about two minutes.
  * Read-only requests are safe to repeat, so they are retried while the server wakes, and the storefront shows
  * a notice in the meantime (requirement: any noticeable wait shows progress). State-changing requests are never
  * retried here.
@@ -46,7 +46,7 @@ export interface WakeOptions {
 
 /** Runs a safe (read-only) request, retrying with a notice while the API wakes up. */
 export async function withWakeRetry<T>(request: () => Promise<T>, options: WakeOptions = {}): Promise<T> {
-  const { budgetMs = 90_000, delayMs = 3_000, sleep = ms => new Promise(r => setTimeout(r, ms)), now = Date.now } = options;
+  const { budgetMs = 180_000, delayMs = 3_000, sleep = ms => new Promise(r => setTimeout(r, ms)), now = Date.now } = options;
   const started = now();
   for (;;) {
     try {
