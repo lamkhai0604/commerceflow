@@ -100,8 +100,8 @@ function ProductDetail({ product }: { product: StorefrontProduct }) {
                 Shipping and returns<span aria-hidden="true" className="text-xl group-open:rotate-45">+</span>
               </summary>
               <p className="mt-3 text-[15px] leading-relaxed text-stone-700">
-                Free shipping on orders over $75; otherwise $9.00. Unused items can be returned within 30 days.
-                This is a demo store, so no orders are shipped.
+                Free shipping on orders over $75; otherwise $9.00. Our demonstration policy is 30 days for unused items; this demo store has no returns process.
+                No orders are shipped.
               </p>
             </details>
           </div>

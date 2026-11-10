@@ -95,8 +95,15 @@ Create the account first and grant the role as described in [Administrator accou
 | 8.13 | Log out and open `/admin` | "Log in to open administration" |
 | 8.14 | Log in with a normal (non-admin) account and open `/admin` | "You do not have access to administration" |
 
+| 8.15 | **Products and stock** → **New product**; leave the form empty and press **Create product** | Each missing field is named |
+| 8.16 | Type the name `Linen Table Runner` | The address fills itself in (`linen-table-runner`) and shows the page it will have |
+| 8.17 | Choose a category, price `34.50`, stock `12`, a description, a photo (**Same photo as …**) and create | "Product created"; it appears in the list and, if shown, in the store with that price and photo |
+| 8.18 | Create another product with the same address | "Another product already uses this address"; nothing is created |
+| 8.19 | Create a product and leave the photo on **Placeholder** | The product page shows a neutral grey placeholder picture |
+| 8.20 | Account menu → **Your account** | Your name, email and an **Administrator** label, with links to order history and administration |
+
 Stock rule in the store (needs step 8.9 first): add 4 of the product with 3 left and check out. Expect a message naming the product and how many are available, and no order.
 
 ## What is not in this release
 
-Creating new products (it needs image upload), customer self-cancellation, emails and real payments. Taxes and returns are demonstration text only.
+Uploading new product photos (a new product uses a photo already in the store, or a placeholder), customer self-cancellation, emails and real payments. Taxes and returns are demonstration text only.

@@ -37,3 +37,17 @@ export interface ProductChanges {
   price?: Money;
   active?: boolean;
 }
+
+export interface NewProduct {
+  name: string;
+  slug: string;
+  categoryId: string;
+  description: string;
+  price: Money;
+  stockQuantity: number;
+  active: boolean;
+  /** A library image such as `/images/products/stoneware-mug`; the placeholder is used when omitted. */
+  imagePath?: string;
+}
+
+export const PLACEHOLDER_IMAGE = '/images/products/placeholder';

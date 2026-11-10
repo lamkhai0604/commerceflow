@@ -2,7 +2,7 @@
 
 An e-commerce web application: a React storefront and a Java Spring Boot backend with PostgreSQL, built sprint by sprint with a written design baseline, change control and automated tests.
 
-**Status:** Sprint 4 released; Sprint 5 (administration and stock visibility) is in review. The live demo at https://khai-shop.vercel.app covers the catalog, guest and member carts, idempotent checkout with demonstration payments, order history and order tracking, on top of session authentication behind HTTPS. Try it with the [demonstration guide](docs/DEMO-GUIDE.md); see the [current status](docs/STATUS.md).
+**Status:** Sprint 5 released; Sprint 6 (MVP completion and hardening) is in review. The live demo at https://khai-shop.vercel.app covers the catalog, guest and member carts, idempotent checkout with demonstration payments, order history and tracking, and administration (orders, stock, products), on top of session authentication behind HTTPS. Try it with the [demonstration guide](docs/DEMO-GUIDE.md); see the [current status](docs/STATUS.md).
 
 ## Features
 
@@ -98,7 +98,7 @@ The storefront is served by Vercel, which forwards `/api/v1` to the API on Rende
 | --- | --- |
 | `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (18 scenarios: authentication, guest checkout, member checkout and administration) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (19 scenarios: authentication, guest checkout, member checkout, administration and product creation) and guaranteed cleanup |
 
 ## Documentation
 

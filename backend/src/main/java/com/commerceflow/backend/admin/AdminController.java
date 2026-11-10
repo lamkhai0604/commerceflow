@@ -4,6 +4,7 @@ import com.commerceflow.backend.admin.AdminModels.AdminOrder;
 import com.commerceflow.backend.admin.AdminModels.AdminProduct;
 import com.commerceflow.backend.admin.AdminModels.InventoryRequest;
 import com.commerceflow.backend.admin.AdminModels.OrderStatus;
+import com.commerceflow.backend.admin.AdminModels.ProductCreateRequest;
 import com.commerceflow.backend.admin.AdminModels.ProductPatchRequest;
 import com.commerceflow.backend.admin.AdminModels.StatusChangeRequest;
 import com.commerceflow.backend.auth.AuthPrincipal;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,6 +54,12 @@ public class AdminController {
     @GetMapping("/products")
     public List<AdminProduct> products(@RequestParam(required = false) String q, @RequestParam(defaultValue = "100") int limit) {
         return products.list(search(q), limit(limit));
+    }
+
+    @PostMapping("/products")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AdminProduct create(@AuthenticationPrincipal AuthPrincipal admin, @Valid @RequestBody ProductCreateRequest request) {
+        return products.create(admin.id(), request);
     }
 
     @PatchMapping("/products/{productId}")

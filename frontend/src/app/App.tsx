@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
+import AccountPage from '@/pages/AccountPage';
 import CartPage from '@/pages/CartPage';
 import CheckoutPage from '@/pages/CheckoutPage';
 import HomePage from '@/pages/HomePage';
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="cart" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="checkout/confirmation" element={<OrderConfirmationPage />} />
+        <Route path="account" element={<AccountPage />} />
         <Route path="account/orders" element={<OrdersPage />} />
         <Route path="account/orders/:orderId" element={<OrderDetailPage />} />
         <Route path="track-order" element={<TrackOrderPage />} />

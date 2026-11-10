@@ -54,3 +54,21 @@
 
 /* Fields focused after validation must not sit under the sticky header. */
 input, select, textarea { scroll-margin-top: 6rem; }
+
+/* Tailwind 4 no longer gives buttons a pointer cursor; every control that can be clicked shows one, and a disabled one does not. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='menuitem']:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}

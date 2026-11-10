@@ -1,6 +1,6 @@
 import { createApiClient } from '@/lib/apiClient';
 import type { Order } from '@/features/commerce/types';
-import type { AdminOrder, AdminProduct, OrderStatus, ProductChanges } from './types';
+import type { AdminOrder, AdminProduct, NewProduct, OrderStatus, ProductChanges } from './types';
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
@@ -15,6 +15,7 @@ export function createAdminApi(client: ApiClient = createApiClient()) {
     changeStatus: (id: string, status: OrderStatus, reason?: string) =>
       write<AdminOrder>({ method: 'PATCH', url: `/admin/orders/${encodeURIComponent(id)}/status`, data: { status, reason: reason || undefined } }).then(r => r.data),
     products: () => get<AdminProduct[]>('/admin/products', { limit: 200 }),
+    createProduct: (product: NewProduct) => write<AdminProduct>({ method: 'POST', url: '/admin/products', data: product }, 201).then(r => r.data),
     updateProduct: (id: string, changes: ProductChanges) =>
       write<AdminProduct>({ method: 'PATCH', url: `/admin/products/${encodeURIComponent(id)}`, data: changes }).then(r => r.data),
     /** `expected` makes the edit apply only if sales have not changed the stock since it was read. */
