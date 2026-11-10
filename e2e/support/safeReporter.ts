@@ -2,6 +2,15 @@ import type { Reporter, FullConfig, Suite, TestCase, TestResult, FullResult } fr
 import fs from 'fs';
 import path from 'path';
 const required = Array.from({ length: 15 }, (_, i) => `E2E-${String(i + 1).padStart(2, '0')}`);
+/** Title of the first step that failed. Step titles are fixed strings written in the specs; they never contain data. */
+function failingStep(steps: TestResult['steps']): string | undefined {
+  for (const step of steps) {
+    const inner = failingStep(step.steps);
+    if (inner) return inner;
+    if (step.error && /^[A-Za-z0-9 ,.:()/'-]{1,80}$/.test(step.title)) return step.title;
+  }
+  return undefined;
+}
 export default class SafeReporter implements Reporter {
   private rows: Array<{ id: string; kind: string; status: string; failure?: string }> = [];
   private runnerError = false;
@@ -16,7 +25,7 @@ export default class SafeReporter implements Reporter {
     const diagnostic = known.find(code => result.error?.message?.includes(code))
       || (result.error?.message?.includes('TypeError') ? 'JAVASCRIPT_TYPE_ERROR' : 'ASSERTION_OR_TIMEOUT');
     this.rows.push({ id, kind: id === 'E2E-15' ? 'CONTROLLED_SYNTHETIC' : 'REAL_BACKEND', status: result.status === 'passed' ? 'PASS' : result.status === 'skipped' ? 'SKIPPED' : 'FAIL',
-      failure: result.status === 'passed' ? undefined : diagnostic });
+      failure: result.status === 'passed' ? undefined : [diagnostic, failingStep(result.steps)].filter(Boolean).join(' @ ') });
   }
   onStdOut() {} onStdErr() {} // Never emit worker call logs or raw failures.
   onError() { this.runnerError = true; }

@@ -6,7 +6,7 @@ import { renderApp } from '@/test/renderApp';
 
 vi.mock('@/features/catalog/catalogApi', () => import('@/test/fakeCatalogApi'));
 vi.mock('@/features/admin/adminApi', () => ({
-  default: { clearCsrf: vi.fn(), orders: vi.fn(), order: vi.fn(), changeStatus: vi.fn(), products: vi.fn(), updateProduct: vi.fn(), setStock: vi.fn() },
+  default: { clearCsrf: vi.fn(), orders: vi.fn(), order: vi.fn(), changeStatus: vi.fn(), products: vi.fn(), updateProduct: vi.fn(), setStock: vi.fn(), createProduct: vi.fn() },
 }));
 vi.mock('@/features/commerce/commerceApi', () => ({ default: { clearCsrf: vi.fn(), cart: vi.fn(), orders: vi.fn(), order: vi.fn() } }));
 
@@ -168,4 +168,61 @@ test('storefront: low stock is shown on the card and product page, and the quant
   fireEvent.click(plus); fireEvent.click(plus); fireEvent.click(plus);
   expect(screen.getByRole('button', { name: /Add to cart · \$630.00/ })).toBeInTheDocument();
   expect(plus).toBeDisabled();
+});
+
+test('products: a new product gets its address from the name, needs the required fields and offers the photos already in the store', async () => {
+  api.products.mockResolvedValue([product(), product({ id: 'p2', name: 'Oak Nightstand', imageUrl: '/images/products/oak-nightstand' })]);
+  api.createProduct.mockResolvedValueOnce(product({ id: 'p3', name: 'Linen Table Runner', slug: 'linen-table-runner', price: '34.50', stockQuantity: 12 }));
+  renderApp('/admin/products', {}, admin);
+  await screen.findByText('Oak Nightstand');
+  fireEvent.click(screen.getByRole('button', { name: 'New product' }));
+  const dialog = await screen.findByRole('dialog', { name: 'New product' });
+
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Create product' }));
+  expect(within(dialog).getByText('Name is required.')).toBeInTheDocument();
+  expect(within(dialog).getByText('Please choose a category.')).toBeInTheDocument();
+  expect(within(dialog).getByText(/Enter a price from 0.01/)).toBeInTheDocument();
+  expect(api.createProduct).not.toHaveBeenCalled();
+
+  fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: ' Linen Table Runner! ' } });
+  expect(within(dialog).getByLabelText(/^Address/)).toHaveValue('linen-table-runner');
+  expect(within(dialog).getByText('Page: /products/linen-table-runner')).toBeInTheDocument();
+  await waitFor(() => expect(within(dialog).getByRole('option', { name: 'Decor' })).toBeInTheDocument());
+  fireEvent.change(within(dialog).getByLabelText(/^Category/), { target: { value: within(dialog).getByRole('option', { name: 'Decor' }).getAttribute('value') } });
+  fireEvent.change(within(dialog).getByLabelText(/^Price/), { target: { value: '34.5' } });
+  fireEvent.change(within(dialog).getByLabelText(/^In stock/), { target: { value: '12' } });
+  expect(within(dialog).getAllByRole('option', { name: /^Same photo as/ }).map(o => o.textContent)).toEqual(['Same photo as Stoneware Mug', 'Same photo as Oak Nightstand']);
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Create product' }));
+
+  expect(await screen.findByText('Product created')).toBeInTheDocument();
+  expect(api.createProduct).toHaveBeenCalledWith(expect.objectContaining({
+    name: 'Linen Table Runner!', slug: 'linen-table-runner', price: '34.50', stockQuantity: 12, active: true, imagePath: undefined }));
+  expect(screen.getByText('Linen Table Runner')).toBeInTheDocument();
+});
+
+test('products: a slug that is already used is reported on the address field and nothing is created', async () => {
+  api.products.mockResolvedValue([product()]);
+  api.createProduct.mockRejectedValueOnce({ status: 409, code: 'PRODUCT_SLUG_CONFLICT' });
+  renderApp('/admin/products', {}, admin);
+  await screen.findByText('Stoneware Mug');
+  fireEvent.click(screen.getByRole('button', { name: 'New product' }));
+  const dialog = await screen.findByRole('dialog', { name: 'New product' });
+  await waitFor(() => expect(within(dialog).getByRole('option', { name: 'Decor' })).toBeInTheDocument());
+  fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: 'Stoneware Mug' } });
+  fireEvent.change(within(dialog).getByLabelText(/^Category/), { target: { value: within(dialog).getByRole('option', { name: 'Decor' }).getAttribute('value') } });
+  fireEvent.change(within(dialog).getByLabelText(/^Price/), { target: { value: '18' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Create product' }));
+  expect(await within(dialog).findByText(/Another product already uses this address/)).toBeInTheDocument();
+  expect(screen.queryByText('Product created')).not.toBeInTheDocument();
+});
+
+test('account page shows the signed-in details, marks administrators and is closed to signed-out visitors', async () => {
+  const view = renderApp('/account');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Log in to see your account' })).toBeInTheDocument();
+  view.unmount();
+  renderApp('/account', {}, admin);
+  expect(await screen.findByRole('heading', { level: 1, name: 'Your account' })).toBeInTheDocument();
+  expect(screen.getByText('boss@example.com')).toBeInTheDocument();
+  expect(screen.getByText('Administrator')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Administration' })).toHaveAttribute('href', '/admin');
 });

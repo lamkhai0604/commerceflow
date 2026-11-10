@@ -1,0 +1,170 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow Product Creation and Account Profile API
+  version: 1.5.0
+  description: Implements the remaining baseline endpoints of OpenAPI v1.0 (`POST /admin/products`, `GET /account/profile`) with the optional `imagePath` recorded
+    as S6-D01.
+servers:
+- url: /api/v1
+paths:
+  /admin/products:
+    post:
+      tags:
+      - Administration
+      summary: Create a product (ADMIN)
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      description: 'The product is created at the end of the display order. With no `imagePath` the placeholder image is used. A product with `active: false` is saved
+        but hidden. The creation is audited.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '201':
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '400':
+          description: VALIDATION_ERROR (field rules) or INVALID_REQUEST (unknown category, unknown field)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: ACCESS_DENIED (not an administrator) or CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: 'PRODUCT_SLUG_CONFLICT: another product already uses the slug; nothing is created'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /account/profile:
+    get:
+      tags:
+      - Authentication
+      summary: The signed-in customer's profile
+      responses:
+        '200':
+          description: Profile (the same shape as GET /auth/me)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: ACCESS_DENIED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    AdminProduct:
+      description: As defined in OpenAPI v1.4 administration
+      type: object
+    ProductCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - slug
+      - categoryId
+      - price
+      - stockQuantity
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        categoryId:
+          type: string
+          format: uuid
+        description:
+          type: string
+          maxLength: 4000
+        price:
+          type: string
+          description: 0.01 to 99999.99 with at most two decimals (a JSON number is also accepted)
+        stockQuantity:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        active:
+          type: boolean
+          default: true
+        imagePath:
+          type: string
+          pattern: ^/images/products/[a-z0-9-]+$
+          description: 'An image shipped with the storefront (S6-D01). Default: /images/products/placeholder'
+    UserProfile:
+      type: object
+      required:
+      - id
+      - email
+      - fullName
+      - roles
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        fullName:
+          type: string
+        roles:
+          type: array
+          items:
+            enum:
+            - CUSTOMER
+            - ADMIN
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: PRODUCT_SLUG_CONFLICT is new
+        requestId:
+          type: string

@@ -11,13 +11,13 @@
 
 | ID | Task | Status |
 | --- | --- | --- |
-| S6-T01 | Records: sprint plan, decisions, OpenAPI v1.5 | In progress |
-| S6-T02 | Product creation: `POST /admin/products` (baseline `ProductWriteRequest` plus optional `imagePath`), slug conflict, audit entry; administration screen with image choice | Proposed |
-| S6-T03 | `GET /account/profile` and an Account page (profile, order history, administration link) | Proposed |
-| S6-T04 | NFR-02: measure product listing latency with 1,000 seeded products at 20 concurrent users; add an index only if the target is missed | Proposed |
-| S6-T05 | Security response headers for the storefront (Content-Security-Policy and others), verified against every screen | Proposed |
-| S6-T06 | Diagnosable E2E: failures report the failing step by a fixed name (no data); E2E-19 for product creation | Proposed |
-| S6-T07 | Copy: returns text is labelled as demonstration policy (backlog B-05) | Proposed |
+| S6-T01 | Records: sprint plan, decisions, OpenAPI v1.5 | Done ([contract](../api/openapi-v1.5-products-account.yaml)) |
+| S6-T02 | Product creation: `POST /admin/products` (baseline `ProductWriteRequest` plus optional `imagePath`), slug conflict, audit entry; administration screen with image choice | Done |
+| S6-T03 | `GET /account/profile` and an Account page (profile, order history, administration link) | Done |
+| S6-T04 | NFR-02: measure product listing latency with 1,000 seeded products at 20 concurrent users; add an index only if the target is missed | Done |
+| S6-T05 | Security response headers for the storefront (Content-Security-Policy and others), verified against every screen | Done |
+| S6-T06 | Diagnosable E2E: failures report the failing step by a fixed name (no data); E2E-19 for product creation | Done |
+| S6-T07 | Copy: returns text is labelled as demonstration policy (backlog B-05) | Done |
 | S6-T08 | Release, live verification, review and demonstration guide update | Proposed |
 
 ## Acceptance
@@ -32,3 +32,11 @@
 ## Out of scope
 
 Image upload (needs object storage; see S6-D01), customer self-cancellation, emails, real payments, product category management, and per-client rate limiting at the network edge (backlog B-03).
+
+## Results
+
+- Product creation, the account profile and the Account page are implemented; `AdminIntegrationTest` has 15 tests (4 new: creation, slug conflict under concurrency, invalid requests and permissions, profile).
+- NFR-02 is measured: p97.5 at most 158 ms for every listing request with 1,000 products at 20 concurrent users ([report](../testing/performance-nfr-02.md)).
+- The storefront sends a Content-Security-Policy and related headers (S6-D02). The policy was checked on the production build through a server applying the exact headers: the checkout, member, administration and product-creation flows run with no violations, and a deliberate inline script and external image were blocked.
+- A user report during the sprint found that buttons showed no pointer cursor (Tailwind 4 removed the default); fixed in the base styles and covered by E2E-16.
+- The E2E reporter now names the failing step by a fixed title; E2E-19 covers product creation.
