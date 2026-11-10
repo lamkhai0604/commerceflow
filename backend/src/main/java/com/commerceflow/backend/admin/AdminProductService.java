@@ -2,6 +2,7 @@ package com.commerceflow.backend.admin;
 
 import com.commerceflow.backend.admin.AdminModels.AdminProduct;
 import com.commerceflow.backend.admin.AdminModels.InventoryRequest;
+import com.commerceflow.backend.admin.AdminModels.ProductCreateRequest;
 import com.commerceflow.backend.admin.AdminModels.ProductPatchRequest;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -38,6 +39,38 @@ public class AdminProductService {
         var statement = jdbc.sql(sql).param("limit", limit);
         if (search != null) statement = statement.param("q", "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
         return statement.query(this::map).list();
+    }
+
+    /** Shown until an image is chosen; the files ship with the storefront. */
+    static final String PLACEHOLDER_IMAGE = "/images/products/placeholder";
+
+    @Transactional
+    public AdminProduct create(UUID actor, ProductCreateRequest request) {
+        boolean category = jdbc.sql("SELECT count(*) FROM commerceflow.categories WHERE id = :id").param("id", request.categoryId())
+                .query(Long.class).single() == 1;
+        if (!category) throw new AdminException.InvalidRequest();
+        UUID id = UUID.randomUUID();
+        try {
+            jdbc.sql("""
+                    INSERT INTO commerceflow.products (id, category_id, name, slug, description, price, stock_quantity, active,
+                        image_path, image_alt, display_order)
+                    VALUES (:id, :category, :name, :slug, :description, :price, :stock, :active, :image, :alt,
+                        (SELECT COALESCE(max(display_order), 0) + 10 FROM commerceflow.products))""")
+                    .param("id", id).param("category", request.categoryId()).param("name", request.name()).param("slug", request.slug())
+                    .param("description", request.description() == null ? "" : request.description())
+                    .param("price", request.price()).param("stock", request.stockQuantity())
+                    .param("active", request.active() == null || request.active())
+                    .param("image", request.imagePath() == null ? PLACEHOLDER_IMAGE : request.imagePath()).param("alt", request.name()).update();
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new AdminException.SlugConflict();
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("name", request.name());
+        details.put("slug", request.slug());
+        details.put("price", request.price().setScale(2).toPlainString());
+        details.put("stock", request.stockQuantity());
+        audit.record(actor, "PRODUCT_CREATED", "PRODUCT", id, null, details);
+        return get(id);
     }
 
     @Transactional

@@ -334,9 +334,96 @@ class AdminIntegrationTest {
         assertThat(admin.get("/admin/orders?limit=201").statusCode()).isEqualTo(400);
 
         var products = json(admin.get("/admin/products?limit=200"));
-        assertThat(products.size()).isEqualTo(21);
+        assertThat(products.size()).isGreaterThanOrEqualTo(21); // the seeded catalog, plus anything other tests created
         assertThat(products.get(0).has("stockQuantity")).isTrue();
         assertThat(json(admin.get("/admin/products?q=mug")).size()).isEqualTo(1);
+    }
+
+    static final String DECOR = "b7034a57-c451-5d09-a017-3da1b64f5cbd";
+
+    Map<String, Object> newProduct(String slug) {
+        return new java.util.LinkedHashMap<>(Map.of("name", "Linen Table Runner", "slug", slug, "categoryId", DECOR,
+                "description", "Washed linen, 180 cm.", "price", "34.50", "stockQuantity", 12));
+    }
+
+    @Test
+    void administratorsCreateProductsThatAppearInTheStoreWithAPlaceholderImageUnlessOneIsChosen() throws Exception { // FR-14, S6-D01
+        var admin = account(true);
+        String slug = "runner-" + UUID.randomUUID().toString().substring(0, 8);
+        var created = admin.post("/admin/products", newProduct(slug));
+        assertThat(created.statusCode()).as(created.body()).isEqualTo(201);
+        var product = json(created);
+        assertThat(product.get("slug").asText()).isEqualTo(slug);
+        assertThat(product.get("price").asText()).isEqualTo("34.50");
+        assertThat(product.get("stockQuantity").asInt()).isEqualTo(12);
+        assertThat(product.get("active").asBoolean()).isTrue();
+        assertThat(product.get("imageUrl").asText()).isEqualTo("/images/products/placeholder");
+        assertThat(product.get("categoryName").asText()).isEqualTo("Decor");
+
+        var shopper = new Browser().csrf();
+        var visible = json(shopper.get("/products/" + product.get("id").asText()));
+        assertThat(visible.get("name").asText()).isEqualTo("Linen Table Runner");
+        assertThat(visible.get("available").asBoolean()).isTrue();
+        assertThat(buy(product.get("id").asText(), 2).get("subtotalAmount").asText()).isEqualTo("69.00");
+
+        var withImage = newProduct(slug + "-b");
+        withImage.put("imagePath", "/images/products/stoneware-mug");
+        withImage.put("active", false);
+        var hidden = json(admin.post("/admin/products", withImage));
+        assertThat(hidden.get("imageUrl").asText()).isEqualTo("/images/products/stoneware-mug");
+        assertThat(hidden.get("active").asBoolean()).isFalse();
+        assertThat(shopper.get("/products/" + hidden.get("id").asText()).statusCode()).isEqualTo(404);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM commerceflow.admin_audit_log WHERE action = 'PRODUCT_CREATED'", Long.class)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT display_order FROM commerceflow.products WHERE slug = ?", Integer.class, slug + "-b"))
+                .isGreaterThan(jdbc.queryForObject("SELECT display_order FROM commerceflow.products WHERE slug = ?", Integer.class, slug));
+    }
+
+    @Test
+    void aSlugAlreadyInUseIsRejectedEvenWhenCreatedAtTheSameMoment() throws Exception {
+        var admin = account(true);
+        assertThat(json(admin.post("/admin/products", newProduct("stoneware-mug"))).get("code").asText()).isEqualTo("PRODUCT_SLUG_CONFLICT");
+        long before = jdbc.queryForObject("SELECT count(*) FROM commerceflow.products", Long.class);
+
+        String slug = "race-" + UUID.randomUUID().toString().substring(0, 8);
+        var results = race(6, i -> admin.post("/admin/products", newProduct(slug)).statusCode());
+        assertThat(results.stream().filter(code -> code == 201)).hasSize(1);
+        assertThat(results.stream().filter(code -> code == 409)).hasSize(5);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM commerceflow.products", Long.class)).isEqualTo(before + 1);
+    }
+
+    @Test
+    void invalidProductCreationIsRejectedWithoutSideEffects() throws Exception {
+        var admin = account(true);
+        long before = jdbc.queryForObject("SELECT count(*) FROM commerceflow.products", Long.class);
+        for (var change : List.<Map<String, Object>>of(Map.of("name", " "), Map.of("slug", "Bad Slug"), Map.of("slug", "-bad-"),
+                Map.of("price", "0"), Map.of("price", "1.999"), Map.of("price", "100000.00"), Map.of("stockQuantity", -1),
+                Map.of("categoryId", UUID.randomUUID().toString()), Map.of("imagePath", "https://evil.example/x.png"),
+                Map.of("imagePath", "/images/products/../secret"), Map.of("unknown", "field"))) {
+            var request = newProduct("ok-" + UUID.randomUUID().toString().substring(0, 8));
+            request.putAll(change);
+            assertThat(admin.post("/admin/products", request).statusCode()).as(change.toString()).isEqualTo(400);
+        }
+        var missing = newProduct("x"); missing.remove("price");
+        assertThat(admin.post("/admin/products", missing).statusCode()).isEqualTo(400);
+
+        assertThat(account(false).post("/admin/products", newProduct("customer-product")).statusCode()).isEqualTo(403);
+        assertThat(new Browser().csrf().post("/admin/products", newProduct("anonymous-product")).statusCode()).isEqualTo(401);
+        var noToken = admin.send("POST", "/admin/products", newProduct("no-token"), Map.of(), false);
+        assertThat(noToken.statusCode()).isEqualTo(403);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM commerceflow.products", Long.class)).isEqualTo(before);
+    }
+
+    @Test
+    void theAccountProfileIsPrivateToTheSignedInCustomer() throws Exception {
+        assertThat(new Browser().csrf().get("/account/profile").statusCode()).isEqualTo(401);
+        var customer = account(false);
+        var profile = json(customer.get("/account/profile"));
+        assertThat(profile.get("email").asText()).isEqualTo(customer.email);
+        assertThat(profile.get("roles")).hasSize(1);
+        assertThat(profile.has("password")).isFalse();
+        var admin = account(true);
+        assertThat(json(admin.get("/account/profile")).get("roles")).hasSize(2);
     }
 
     List<String> ids(JsonNode orders) {

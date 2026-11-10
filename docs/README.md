@@ -25,7 +25,8 @@
 | [Sprint 2](sprints/sprint-2.md) | Storefront cleanup and redesign | Released |
 | [Sprint 3](sprints/sprint-3.md) | Catalog API, hosted backend, repository layout | Released |
 | [Sprint 4](sprints/sprint-4.md) | Cart, checkout, orders, guest checkout | Released |
-| [Sprint 5](sprints/sprint-5.md) | Administration and stock visibility | In progress |
+| [Sprint 5](sprints/sprint-5.md) | Administration and stock visibility | Released |
+| [Sprint 6](sprints/sprint-6.md) | MVP completion and hardening | In progress |
 
 ## Document status labels
 

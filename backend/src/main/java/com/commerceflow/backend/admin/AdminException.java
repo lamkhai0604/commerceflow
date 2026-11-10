@@ -18,5 +18,6 @@ public class AdminException extends RuntimeException {
     static final class NotFound extends AdminException { NotFound() { super(ErrorCode.RESOURCE_NOT_FOUND); } }
     static final class InvalidRequest extends AdminException { InvalidRequest() { super(ErrorCode.INVALID_REQUEST); } }
     static final class InvalidTransition extends AdminException { InvalidTransition() { super(ErrorCode.INVALID_STATE_TRANSITION); } }
+    static final class SlugConflict extends AdminException { SlugConflict() { super(ErrorCode.PRODUCT_SLUG_CONFLICT); } }
     static final class StockChanged extends AdminException { StockChanged() { super(ErrorCode.STOCK_CHANGED); } }
 }
