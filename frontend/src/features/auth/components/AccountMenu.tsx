@@ -78,6 +78,8 @@ export default function AccountMenu() {
             <>
               <p className="truncate px-4 pt-1.5 pb-2 text-[13px] text-stone-600">{auth.currentUser?.email}</p>
               <button type="button" role="menuitem" tabIndex={-1} className={item}
+                onClick={() => choose(() => navigate('/account'))}>Your account</button>
+              <button type="button" role="menuitem" tabIndex={-1} className={item}
                 onClick={() => choose(() => navigate('/account/orders'))}>Order history</button>
               {auth.currentUser?.roles.includes('ADMIN') && (
                 <button type="button" role="menuitem" tabIndex={-1} className={item}

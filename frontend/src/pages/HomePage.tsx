@@ -38,7 +38,7 @@ export default function HomePage() {
       <section aria-label="Store benefits" className={container}>
         <ul className="grid gap-4 border-y border-stone-200 py-6 text-[15px] sm:grid-cols-3">
           <li className="flex items-center gap-3"><TruckIcon className="shrink-0 text-pine-700" /><span><strong className="font-semibold">Free shipping</strong> on orders over $75</span></li>
-          <li className="flex items-center gap-3"><ReturnIcon className="shrink-0 text-pine-700" /><span><strong className="font-semibold">30-day returns</strong> on unused items</span></li>
+          <li className="flex items-center gap-3"><ReturnIcon className="shrink-0 text-pine-700" /><span><strong className="font-semibold">30-day returns</strong> on unused items (demo policy)</span></li>
           <li className="flex items-center gap-3"><LockIcon className="shrink-0 text-pine-700" /><span><strong className="font-semibold">Demo checkout</strong>, no card needed</span></li>
         </ul>
       </section>

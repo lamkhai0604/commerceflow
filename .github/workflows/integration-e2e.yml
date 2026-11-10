@@ -56,7 +56,7 @@ jobs:
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           from pathlib import Path
-          for suite, required in [('AuthenticationIntegrationTest',22), ('RegistrationConstraintsMigrationTest',3), ('CatalogIntegrationTest',6), ('CommerceIntegrationTest',10), ('AdminIntegrationTest',11)]:
+          for suite, required in [('AuthenticationIntegrationTest',22), ('RegistrationConstraintsMigrationTest',3), ('CatalogIntegrationTest',6), ('CommerceIntegrationTest',10), ('AdminIntegrationTest',15)]:
               paths=list(Path('backend/target/surefire-reports').glob('TEST-*.'+suite+'.xml'))
               if len(paths)!=1: raise SystemExit('Missing required PostgreSQL test suite')
               root=ET.parse(paths[0]).getroot()

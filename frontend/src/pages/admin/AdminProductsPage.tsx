@@ -3,6 +3,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Badge, EmptyState, LoadError, Skeleton } from '@/components/ui/Feedback';
+import { NewProductDialog } from './NewProductDialog';
 import { TextField } from '@/components/ui/TextField';
 import { useToast } from '@/components/ui/Toast';
 import adminApi from '@/features/admin/adminApi';
@@ -29,14 +30,23 @@ function ProductList({ initial }: { initial: AdminProduct[] }) {
   const [products, setProducts] = useState(initial);
   const [search, setSearch] = useState('');
   const shown = products.filter(p => p.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const [creating, setCreating] = useState(false);
+  const toast = useToast();
   const replace = (updated: AdminProduct) => setProducts(list => list.map(p => (p.id === updated.id ? updated : p)));
   return (
     <>
-      <div className="max-w-sm">
-        <label htmlFor="product-search" className="block text-sm font-semibold">Find a product</label>
-        <input id="product-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name"
-          className="mt-1.5 h-12 w-full rounded-xl border border-stone-400 bg-white px-3.5 text-[15px] placeholder:text-stone-500" />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="w-full max-w-sm">
+          <label htmlFor="product-search" className="block text-sm font-semibold">Find a product</label>
+          <input id="product-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name"
+            className="mt-1.5 h-12 w-full rounded-xl border border-stone-400 bg-white px-3.5 text-[15px] placeholder:text-stone-500" />
+        </div>
+        <Button size="lg" onClick={() => setCreating(true)}>New product</Button>
       </div>
+      <NewProductDialog open={creating} products={products} onClose={() => setCreating(false)} onCreated={created => {
+        setProducts(list => [...list, created]); setSearch(''); setCreating(false);
+        toast({ title: 'Product created', description: created.active ? `${created.name} is in the store.` : `${created.name} is saved but hidden.`, tone: 'success' });
+      }} />
       <p className="mt-4 text-sm text-stone-600" role="status">{shown.length} of {products.length} products</p>
       {shown.length === 0 ? <EmptyState className="mt-4" title="No products match" description="Try a different name." /> : (
         <ul className="mt-3 grid grid-cols-1 gap-3">{shown.map(product => <ProductRow key={product.id} product={product} onChange={replace} />)}</ul>
