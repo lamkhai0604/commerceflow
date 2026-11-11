@@ -31,7 +31,7 @@ export default function HomePage() {
           </div>
         </div>
         <img src="/images/site/hero.webp" alt="A bright living room with a black sofa, a white dresser and green plants"
-          width={1400} height={1200} fetchPriority="high"
+          width={1400} height={1200} {...{ fetchpriority: 'high' }}
           className="aspect-[7/6] w-full rounded-[28px] bg-linen object-cover" />
       </section>
 

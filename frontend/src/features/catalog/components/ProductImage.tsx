@@ -14,7 +14,8 @@ export function ProductImage({ src, alt, sizes, className, priority = false }: P
   return (
     <img src={`${src}-480.webp`} srcSet={`${src}-480.webp 480w, ${src}-960.webp 960w`} sizes={sizes} alt={alt}
       width={480} height={600} loading={priority ? 'eager' : 'lazy'} decoding="async"
-      fetchPriority={priority ? 'high' : undefined}
+      // React 18 only knows the lowercase attribute name; the camel-case prop is reported as unknown.
+      {...(priority ? { fetchpriority: 'high' } : {})}
       className={cn('aspect-[4/5] w-full rounded-(--radius-card) bg-linen object-cover', className)} />
   );
 }
