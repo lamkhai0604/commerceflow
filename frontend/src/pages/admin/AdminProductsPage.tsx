@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
@@ -151,6 +151,11 @@ function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string>();
+  const form = useRef<HTMLFormElement>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (attempt) form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [attempt]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -160,7 +165,7 @@ function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct
     else if (name.trim().length > 200) invalid.name = 'Name must be 200 characters or fewer.';
     if (!PRICE.test(price.trim()) || Number(price) < 0.01) invalid.price = 'Enter a price from 0.01 to 99999.99 with at most two decimals.';
     setErrors(invalid);
-    if (Object.keys(invalid).length) return;
+    if (Object.keys(invalid).length) { setAttempt(value => value + 1); return; }
     const changes: ProductChanges = {};
     if (name.trim() !== product.name) changes.name = name.trim();
     if (description !== product.description) changes.description = description;
@@ -174,7 +179,7 @@ function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct
   return (
     <>
       <h2 id={`edit-${product.id}`} className="text-xl font-bold tracking-tight">Edit {product.name}</h2>
-      <form onSubmit={submit} noValidate className="mt-4 grid gap-4">
+      <form ref={form} onSubmit={submit} noValidate className="mt-4 grid gap-4">
         <TextField id={`name-${product.id}`} label="Name" required data-autofocus value={name} onChange={e => setName(e.target.value)} error={errors.name} />
         <TextField id={`price-${product.id}`} label="Price (USD)" required inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)}
           error={errors.price} hint="Applies to new orders. Existing orders keep the price they were placed at." />
