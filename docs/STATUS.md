@@ -4,9 +4,9 @@ Updated: 2026-11-09
 
 | Field | Value |
 | --- | --- |
-| Production (`master`) | Sprint 5 released (administration and stock visibility) on `https://khai-shop.vercel.app` |
-| Integration (`develop`) | `29b31f6` (Sprint 5) |
-| Active sprint | [Sprint 6](sprints/sprint-6.md): MVP completion and hardening, branch `feature/sprint-6-mvp-completion` (all tasks implemented, awaiting CI and release) |
+| Production (`master`) | Sprint 6 released (`f936258`): product creation, account page, security headers, on top of administration and checkout, at `https://khai-shop.vercel.app` |
+| Integration (`develop`) | `f936258` plus the review fixes (branch `review/sprint-5-6-release-candidate`) |
+| Active sprint | none; Sprint 6 closed ([review](sprints/sprint-6.md#sprint-review-2026-11-11)); release candidate with review fixes R-10 to R-12 awaiting CI and release |
 
 ## Live system
 
@@ -14,10 +14,10 @@ Catalog, cart, guest and member checkout, order history, order tracking, sign-up
 
 ## Known limitations
 
-- Administrator accounts are made by the Product Owner in the Neon console ([Administrator accounts](DEPLOYMENT.md#administrator-accounts), decision S5-D02, awaiting confirmation).
-- Product creation, customer self-cancellation, emails and real payments are not implemented.
+- Administrator accounts are made by the Product Owner in the Neon console ([Administrator accounts](DEPLOYMENT.md#administrator-accounts), decision S5-D02, applied once, explicit confirmation pending).
+- Product photos cannot be uploaded; image upload, customer self-cancellation, emails and real payments are not implemented.
 - Free-tier API cold starts take about two minutes after 15 minutes without traffic.
-- Backlog B-03 to B-08 of the [Sprint 4 review](reviews/sprint-4-product-review.md) remain open.
+- Backlog B-10 to B-16 of the [Sprint 5 and 6 review](reviews/sprint-5-6-product-review.md) and B-03, B-04, B-06 to B-08 of the [Sprint 4 review](reviews/sprint-4-product-review.md) remain open.
 
 ## Sprint 4 verification (2026-11-09, branch `feature/sprint-4-checkout`)
 
@@ -25,14 +25,12 @@ Catalog, cart, guest and member checkout, order history, order tracking, sign-up
 - Frontend: typecheck, lint, 147/147 tests, production build.
 - Real browser (Chromium, local API and Vite): guest checkout through the choice dialog, declined and unavailable payments, confirmation, order tracking; member log-in at checkout with cart merge, server cart kept across reload, member checkout, order history and detail; no horizontal scroll at 375 px.
 
-## Sprint 6 verification (2026-11-10, branch `feature/sprint-6-mvp-completion`)
+## Release candidate verification (2026-11-11, branch `review/sprint-5-6-release-candidate`)
 
-- Backend: `AdminIntegrationTest` 15/15 against local PostgreSQL 16, run twice on fresh databases (CI runs it on Testcontainers).
-- Frontend: typecheck, lint, 165/165 tests, production build; E2E package typecheck and lint.
-- Real browser (Chromium) on the production build served with the exact `vercel.json` headers: checkout, member, administration and product-creation flows pass with no Content-Security-Policy violations; pointer cursor verified on buttons, links, menu items, radios, checkboxes and selects.
-- NFR-02 measured locally with 1,000 products at 20 users: p97.5 at most 158 ms ([report](testing/performance-nfr-02.md)).
-- The Docker-based HTTPS E2E (including E2E-19) was not run locally; CI runs it.
+- Live checks on the Sprint 6 release passed (headers, purchase flows with no policy violations, pointer cursor, account profile API and page, customer access to administration refused); see the [review](reviews/sprint-5-6-product-review.md).
+- Accessibility scan of 13 screens at 1280 px and 375 px: no violations; focus checks pass.
+- Review fixes R-10 to R-12: frontend typecheck, lint and tests, verified in a real browser.
 
 ## Next action
 
-Open the Sprint 6 pull request into `develop`; after CI passes, merge, open the release pull request for the Product Owner, then live checks, the review and the Product Owner's trial.
+Merge the review fixes into `develop` after CI, release to `master` (Product Owner), then the Product Owner follows the [demonstration guide](DEMO-GUIDE.md) (section 8 for administration). Decisions needed from the Product Owner: S5-D02 confirmation, B-10 (photo upload), B-11 (customer cancellation) and B-12 (keep-warm request).

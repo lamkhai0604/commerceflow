@@ -200,6 +200,19 @@ test('products: a new product gets its address from the name, needs the required
   expect(screen.getByText('Linen Table Runner')).toBeInTheDocument();
 });
 
+test('products: failed validation moves focus to the first field that needs attention', async () => {
+  api.products.mockResolvedValue([product()]);
+  renderApp('/admin/products', {}, admin);
+  await screen.findByText('Stoneware Mug');
+  fireEvent.click(screen.getByRole('button', { name: 'New product' }));
+  const dialog = await screen.findByRole('dialog', { name: 'New product' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Create product' }));
+  await waitFor(() => expect(within(dialog).getByLabelText(/^Name/)).toHaveFocus());
+  fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: 'Runner' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Create product' }));
+  await waitFor(() => expect(within(dialog).getByLabelText(/^Category/)).toHaveFocus());
+});
+
 test('products: a slug that is already used is reported on the address field and nothing is created', async () => {
   api.products.mockResolvedValue([product()]);
   api.createProduct.mockRejectedValueOnce({ status: 409, code: 'PRODUCT_SLUG_CONFLICT' });

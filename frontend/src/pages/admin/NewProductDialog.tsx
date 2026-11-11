@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
@@ -44,6 +44,12 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  const [attempt, setAttempt] = useState(0);
+  // After a failed submission, move focus (and the scroll position) to the first field that needs attention.
+  useEffect(() => {
+    if (attempt) form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [attempt]);
 
   // One option per photo already in the store; the picture is named after the first product that uses it.
   const photos = [...new Map(products.map(p => [p.imageUrl, p.name])).entries()].filter(([path]) => path !== PLACEHOLDER_IMAGE);
@@ -65,7 +71,7 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
     if (!PRICE.test(price.trim()) || Number(price) < 0.01) invalid.price = 'Enter a price from 0.01 to 99999.99 with at most two decimals.';
     if (!/^\d{1,6}$/.test(stock.trim()) || Number(stock) > 100000) invalid.stock = 'Enter a whole number from 0 to 100000.';
     setErrors(invalid);
-    if (Object.keys(invalid).length) return;
+    if (Object.keys(invalid).length) { setAttempt(value => value + 1); return; }
     setSaving(true); onBusy(true); setFailure(undefined);
     try {
       onCreated(await adminApi.createProduct({
@@ -73,7 +79,7 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
         imagePath: image === PLACEHOLDER_IMAGE ? undefined : image,
       }));
     } catch (error) {
-      if (isCommerceFailure(error) && error.code === 'PRODUCT_SLUG_CONFLICT') setErrors({ slug: 'Another product already uses this address. Choose a different one.' });
+      if (isCommerceFailure(error) && error.code === 'PRODUCT_SLUG_CONFLICT') { setErrors({ slug: 'Another product already uses this address. Choose a different one.' }); setAttempt(value => value + 1); }
       else setFailure('We could not create the product. Nothing was created; please try again.');
       setSaving(false); onBusy(false);
     }
@@ -83,7 +89,7 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
   return (
     <>
       <h2 id="new-product-title" className="text-xl font-bold tracking-tight">New product</h2>
-      <form onSubmit={submit} noValidate className="mt-4 grid gap-4">
+      <form ref={form} onSubmit={submit} noValidate className="mt-4 grid gap-4">
         <TextField id="new-name" label="Name" required data-autofocus value={name} onChange={e => changeName(e.target.value)} error={errors.name} />
         <TextField id="new-slug" label="Address (slug)" required value={slug} error={errors.slug}
           hint={slug ? `Page: /products/${slug}` : 'Filled in from the name; you can change it.'}
@@ -114,7 +120,7 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
           <div className="mt-1.5 flex items-center gap-3">
             <img src={`${image}-480.webp`} alt="" className="h-16 w-13 shrink-0 rounded-lg bg-linen object-cover" />
             <select id="new-image" value={image} onChange={e => setImage(e.target.value)} className={`${select} mt-0 border-stone-400`}>
-              <option value={PLACEHOLDER_IMAGE}>Placeholder (no photo yet)</option>
+              <option value={PLACEHOLDER_IMAGE}>Placeholder</option>
               {photos.map(([path, product]) => <option key={path} value={path}>Same photo as {product}</option>)}
             </select>
           </div>

@@ -18,7 +18,7 @@
 | S6-T05 | Security response headers for the storefront (Content-Security-Policy and others), verified against every screen | Done |
 | S6-T06 | Diagnosable E2E: failures report the failing step by a fixed name (no data); E2E-19 for product creation | Done |
 | S6-T07 | Copy: returns text is labelled as demonstration policy (backlog B-05) | Done |
-| S6-T08 | Release, live verification, review and demonstration guide update | Proposed |
+| S6-T08 | Release, live verification, review and demonstration guide update | Done: released (`f936258`), live checks passed, [review](../reviews/sprint-5-6-product-review.md) with fixes R-10 to R-12 |
 
 ## Acceptance
 
@@ -40,3 +40,10 @@ Image upload (needs object storage; see S6-D01), customer self-cancellation, ema
 - The storefront sends a Content-Security-Policy and related headers (S6-D02). The policy was checked on the production build through a server applying the exact headers: the checkout, member, administration and product-creation flows run with no violations, and a deliberate inline script and external image were blocked.
 - A user report during the sprint found that buttons showed no pointer cursor (Tailwind 4 removed the default); fixed in the base styles and covered by E2E-16.
 - The E2E reporter now names the failing step by a fixed title; E2E-19 covers product creation.
+
+## Sprint review (2026-11-11)
+
+- Delivered: S6-T01 to S6-T08. PR lamkhai0604/commerceflow#40 merged into `develop` (`f936258`) after Backend CI (including `AdminIntegrationTest`, 15 tests), Frontend CI (165 tests) and the HTTPS integration workflow (including E2E-19) passed; released to `master` by the Product Owner through lamkhai0604/commerceflow#41.
+- Live verification passed: see the [review](../reviews/sprint-5-6-product-review.md#live-verification-of-the-sprint-6-release). The administrator screens could not be exercised on production by the contributor (S5-D02) and are covered by CI and the Product Owner's trial.
+- Test data: live verification registered synthetic accounts (`live-s4-<timestamp>` and `live-s6-<timestamp>@example.com`) and placed demonstration orders.
+- Decisions S6-D01 and S6-D02 await Product Owner review.

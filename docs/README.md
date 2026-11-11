@@ -5,6 +5,7 @@
 | [Current status](STATUS.md) | Active sprint, revision, blockers and next action |
 | [Demonstration guide](DEMO-GUIDE.md) | Step-by-step trial of every implemented feature on the live site |
 | [Performance check (NFR-02)](testing/performance-nfr-02.md) | Product listing latency with 1,000 products at 20 concurrent users |
+| [Sprint 5 and 6 product review](reviews/sprint-5-6-product-review.md) | Review of administration, product creation, the account page and security headers, with live verification and backlog |
 | [Sprint 4 product review](reviews/sprint-4-product-review.md) | Design, flow, business-rule and code review of the Sprint 4 release, with fixes and backlog proposals |
 | [Workflow](WORKFLOW.md) | Branching, permissions, engineering profile and verification commands |
 | [Decision log](DECISIONS.md) | Architecture decisions and change requests with status and links |
@@ -27,7 +28,7 @@
 | [Sprint 3](sprints/sprint-3.md) | Catalog API, hosted backend, repository layout | Released |
 | [Sprint 4](sprints/sprint-4.md) | Cart, checkout, orders, guest checkout | Released |
 | [Sprint 5](sprints/sprint-5.md) | Administration and stock visibility | Released |
-| [Sprint 6](sprints/sprint-6.md) | MVP completion and hardening | In progress |
+| [Sprint 6](sprints/sprint-6.md) | MVP completion and hardening | Released |
 
 ## Document status labels
 
