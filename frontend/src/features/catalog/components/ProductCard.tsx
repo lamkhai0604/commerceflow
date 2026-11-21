@@ -11,15 +11,17 @@ interface ProductCardProps {
   headingLevel?: 'h2' | 'h3';
   showAddToCart?: boolean;
   sizes?: string;
+  /** Load the image first (cards in the first row, which hold the largest content on screen). */
+  priority?: boolean;
 }
 
-export function ProductCard({ product, headingLevel: Heading = 'h3', showAddToCart = true, sizes = '(min-width: 1024px) 25vw, 50vw' }: ProductCardProps) {
+export function ProductCard({ product, headingLevel: Heading = 'h3', showAddToCart = true, sizes = '(min-width: 1024px) 25vw, 50vw', priority = false }: ProductCardProps) {
   const addToCart = useAddToCart();
   const href = `/products/${product.slug}`;
   return (
     <article className="flex flex-col">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="relative block">
-        <ProductImage src={product.image} alt="" sizes={sizes} />
+        <ProductImage src={product.image} alt="" sizes={sizes} priority={priority} />
         {!product.available && <span className="absolute top-3 left-3"><Badge tone="muted">Sold out</Badge></span>}
         {product.available && product.stockLeft && <span className="absolute top-3 left-3"><Badge tone="accent">Only {product.stockLeft} left</Badge></span>}
       </Link>
@@ -31,7 +33,10 @@ export function ProductCard({ product, headingLevel: Heading = 'h3', showAddToCa
         <span className="text-base font-semibold">{formatMoney(product.price)}</span>
         {showAddToCart && (product.available
           ? <Button size="sm" variant="secondary" className="border-pine-700! text-pine-700"
-              aria-label={`Add ${product.name} to cart`} onClick={() => addToCart(product)}>Add to cart</Button>
+              onClick={() => addToCart(product)}>
+              {/* The visible words start the accessible name, so voice control ("click Add to cart") works (WCAG 2.5.3). */}
+              Add to cart<span className="sr-only">: {product.name}</span>
+            </Button>
           : <span className="text-[13px] text-stone-600">Out of stock</span>)}
       </div>
     </article>

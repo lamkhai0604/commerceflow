@@ -10,7 +10,7 @@ test('home page: adding a featured product confirms what was added and updates t
   const { store } = renderApp('/');
   expect(await screen.findByRole('heading', { name: 'Everyday objects, made to last.' })).toBeInTheDocument();
   expect(screen.getByText(/No real orders or payments are taken/)).toBeInTheDocument();
-  fireEvent.click(await screen.findByRole('button', { name: 'Add Velvet Sofa, Forest to cart' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Add to cart: Velvet Sofa, Forest' }));
   const toast = screen.getByText('Added to your cart').closest('[role="status"]') as HTMLElement;
   expect(within(toast).getByText('Velvet Sofa, Forest · Qty 1')).toBeInTheDocument();
   expect(within(toast).getByRole('link', { name: 'View cart' })).toHaveAttribute('href', '/cart');
