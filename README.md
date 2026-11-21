@@ -98,7 +98,7 @@ The storefront is served by Vercel, which forwards `/api/v1` to the API on Rende
 | --- | --- |
 | `frontend-ci.yml` | Type check, lint, Vitest tests and production build |
 | `backend-ci.yml` | `mvn clean verify` with PostgreSQL Testcontainers; fails if integration suites are skipped |
-| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (19 scenarios: authentication, guest checkout, member checkout, administration and product creation) and guaranteed cleanup |
+| `integration-e2e.yml` | Full HTTPS stack with Playwright Chromium (19 scenarios: authentication, guest checkout, member checkout, administration, product creation and editing) and guaranteed cleanup |
 
 ## Documentation
 

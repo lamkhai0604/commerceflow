@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: CommerceFlow Administration Completeness API
+  version: 1.6.0
+  description: Additions to OpenAPI v1.4 and v1.5 (S7-D01). Every path requires the ADMIN role.
+servers:
+- url: /api/v1
+paths:
+  /admin/orders:
+    get:
+      tags:
+      - Administration
+      summary: List orders, newest first, with paging
+      description: As in v1.4, plus `offset`. Orders are ordered by creation time and id, so pages have no repeats or gaps.
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 0
+      responses:
+        '200':
+          description: Orders
+        '400':
+          description: 'INVALID_REQUEST: offset out of range'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': &id001
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403': &id002
+          description: ACCESS_DENIED (not an administrator) or CSRF_INVALID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /admin/products/{productId}:
+    patch:
+      tags:
+      - Administration
+      summary: Update a product (category and photo added)
+      parameters:
+      - &id003
+        name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      description: '`categoryId` moves the product to another category. `imagePath` gives it another photo of the store; the product takes the description of that
+        picture from a product already using it (else its name). Repeating current values changes nothing and records nothing. The slug is not editable.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPatchAddition'
+      responses:
+        '200':
+          description: Updated product (AdminProduct)
+        '400':
+          description: VALIDATION_ERROR (malformed path) or INVALID_REQUEST (unknown category, no field)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+  /admin/products/{productId}/history:
+    get:
+      tags:
+      - Administration
+      summary: Administrative changes to one product, oldest first
+      parameters:
+      - *id003
+      responses:
+        '200':
+          description: 'Audit entries: PRODUCT_CREATED, PRODUCT_UPDATED, STOCK_SET'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEntry'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id002
+components:
+  schemas:
+    ProductPatchAddition:
+      description: Added to the ProductPatchRequest of v1.4
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        imagePath:
+          type: string
+          pattern: ^/images/products/[a-z0-9-]+$
+    AuditEntry:
+      description: As in v1.4. For PRODUCT_UPDATED, `details` may contain name, price, active ({from, to}), description ("changed"), category and image ({from, to}).
+      type: object
+    Problem:
+      type: object
+      properties:
+        code:
+          type: string

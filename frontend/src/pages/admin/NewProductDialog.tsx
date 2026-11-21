@@ -5,6 +5,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { TextField } from '@/components/ui/TextField';
 import adminApi from '@/features/admin/adminApi';
 import { PLACEHOLDER_IMAGE, type AdminProduct } from '@/features/admin/types';
+import { photoOptions } from './photos';
 import { listCategories } from '@/features/catalog/catalogApi';
 import type { CategorySummary } from '@/features/catalog/types';
 import { isCommerceFailure } from '@/features/commerce/types';
@@ -52,7 +53,7 @@ function NewProductForm({ products, onClose, onCreated, onBusy }: Omit<Props, 'o
   }, [attempt]);
 
   // One option per photo already in the store; the picture is named after the first product that uses it.
-  const photos = [...new Map(products.map(p => [p.imageUrl, p.name])).entries()].filter(([path]) => path !== PLACEHOLDER_IMAGE);
+  const photos = photoOptions(products);
 
   const changeName = (value: string) => {
     setName(value);

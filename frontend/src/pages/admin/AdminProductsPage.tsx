@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Badge, EmptyState, LoadError, Skeleton } from '@/components/ui/Feedback';
 import { NewProductDialog } from './NewProductDialog';
+import { photoOptions } from './photos';
+import { ProductHistoryDialog } from './ProductHistoryDialog';
 import { TextField } from '@/components/ui/TextField';
 import { useToast } from '@/components/ui/Toast';
 import adminApi from '@/features/admin/adminApi';
-import type { AdminProduct, ProductChanges } from '@/features/admin/types';
+import { PLACEHOLDER_IMAGE, type AdminProduct, type ProductChanges } from '@/features/admin/types';
+import { listCategories } from '@/features/catalog/catalogApi';
 import { isCommerceFailure } from '@/features/commerce/types';
 import { formatMoney } from '@/lib/money';
 import { useAsync } from '@/lib/useAsync';
@@ -32,6 +35,7 @@ function ProductList({ initial }: { initial: AdminProduct[] }) {
   const shown = products.filter(p => p.name.toLowerCase().includes(search.trim().toLowerCase()));
   const [creating, setCreating] = useState(false);
   const toast = useToast();
+  const photos = photoOptions(products);
   const replace = (updated: AdminProduct) => setProducts(list => list.map(p => (p.id === updated.id ? updated : p)));
   return (
     <>
@@ -49,18 +53,19 @@ function ProductList({ initial }: { initial: AdminProduct[] }) {
       }} />
       <p className="mt-4 text-sm text-stone-600" role="status">{shown.length} of {products.length} products</p>
       {shown.length === 0 ? <EmptyState className="mt-4" title="No products match" description="Try a different name." /> : (
-        <ul className="mt-3 grid grid-cols-1 gap-3">{shown.map(product => <ProductRow key={product.id} product={product} onChange={replace} />)}</ul>
+        <ul className="mt-3 grid grid-cols-1 gap-3">{shown.map(product => <ProductRow key={product.id} product={product} photos={photos} onChange={replace} />)}</ul>
       )}
     </>
   );
 }
 
-function ProductRow({ product, onChange }: { product: AdminProduct; onChange: (product: AdminProduct) => void }) {
+function ProductRow({ product, photos, onChange }: { product: AdminProduct; photos: Array<[string, string]>; onChange: (product: AdminProduct) => void }) {
   const toast = useToast();
   const [stock, setStock] = useState(String(product.stockQuantity));
   const [saving, setSaving] = useState<'stock' | 'active'>();
   const [error, setError] = useState<string>();
   const [editing, setEditing] = useState(false);
+  const [history, setHistory] = useState(false);
   // Follow the server value after a save or a reload (adjusting state during render, not in an effect).
   const [seen, setSeen] = useState(product.stockQuantity);
   if (seen !== product.stockQuantity) { setSeen(product.stockQuantity); setStock(String(product.stockQuantity)); }
@@ -120,13 +125,15 @@ function ProductRow({ product, onChange }: { product: AdminProduct; onChange: (p
         </form>
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" disabled={!!saving} onClick={() => setEditing(true)} aria-label={`Edit details of ${product.name}`}>Edit details</Button>
+          <Button size="sm" variant="secondary" onClick={() => setHistory(true)} aria-label={`History of ${product.name}`}>History</Button>
           <Button size="sm" variant="secondary" loading={saving === 'active'} loadingLabel="Saving…" disabled={!!saving} onClick={toggleActive}
             aria-label={`${product.active ? 'Hide' : 'Show'} ${product.name}`}>{product.active ? 'Hide' : 'Show'}</Button>
         </div>
       </div>
       {!valid && <p className="mt-2 text-[13px] text-red-700">Enter a whole number from 0 to 100000.</p>}
       {error && <Alert tone="error" className="mt-3" onDismiss={() => setError(undefined)}>{error}</Alert>}
-      <EditDialog open={editing} product={product} onClose={() => setEditing(false)} onSaved={updated => { onChange(updated); setEditing(false);
+      <ProductHistoryDialog open={history} productId={product.id} productName={product.name} onClose={() => setHistory(false)} />
+      <EditDialog open={editing} product={product} photos={photos} onClose={() => setEditing(false)} onSaved={updated => { onChange(updated); setEditing(false);
         toast({ title: 'Product saved', description: updated.name, tone: 'success' }); }} />
     </li>
   );
@@ -134,20 +141,23 @@ function ProductRow({ product, onChange }: { product: AdminProduct; onChange: (p
 
 const PRICE = /^\d{1,5}(\.\d{1,2})?$/;
 
-function EditDialog({ open, product, onClose, onSaved }: { open: boolean; product: AdminProduct; onClose: () => void; onSaved: (product: AdminProduct) => void }) {
+function EditDialog({ open, product, photos, onClose, onSaved }: { open: boolean; product: AdminProduct; photos: Array<[string, string]>; onClose: () => void; onSaved: (product: AdminProduct) => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <Dialog open={open} onClose={onClose} labelledBy={`edit-${product.id}`} dismissible={!busy} className="p-6">
       {/* The form only exists while the dialog is open, so it starts from the saved values every time. */}
-      <EditForm product={product} onClose={onClose} onSaved={onSaved} onBusy={setBusy} />
+      <EditForm product={product} photos={photos} onClose={onClose} onSaved={onSaved} onBusy={setBusy} />
     </Dialog>
   );
 }
 
-function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct; onClose: () => void; onSaved: (product: AdminProduct) => void; onBusy: (busy: boolean) => void }) {
+function EditForm({ product, photos, onClose, onSaved, onBusy }: { product: AdminProduct; photos: Array<[string, string]>; onClose: () => void; onSaved: (product: AdminProduct) => void; onBusy: (busy: boolean) => void }) {
   const [name, setName] = useState(product.name);
   const [price, setPrice] = useState(product.price);
   const [description, setDescription] = useState(product.description);
+  const [categoryId, setCategoryId] = useState(product.categoryId);
+  const [image, setImage] = useState(product.imageUrl);
+  const categories = useAsync(() => listCategories(), 'categories');
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string>();
@@ -170,6 +180,8 @@ function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct
     if (name.trim() !== product.name) changes.name = name.trim();
     if (description !== product.description) changes.description = description;
     if (Number(price) !== Number(product.price)) changes.price = Number(price).toFixed(2);
+    if (categoryId !== product.categoryId) changes.categoryId = categoryId;
+    if (image !== product.imageUrl && image !== PLACEHOLDER_IMAGE) changes.imagePath = image;
     if (Object.keys(changes).length === 0) { onClose(); return; }
     setSaving(true); onBusy(true); setFailure(undefined);
     try { onSaved(await adminApi.updateProduct(product.id, changes)); }
@@ -183,6 +195,26 @@ function EditForm({ product, onClose, onSaved, onBusy }: { product: AdminProduct
         <TextField id={`name-${product.id}`} label="Name" required data-autofocus value={name} onChange={e => setName(e.target.value)} error={errors.name} />
         <TextField id={`price-${product.id}`} label="Price (USD)" required inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)}
           error={errors.price} hint="Applies to new orders. Existing orders keep the price they were placed at." />
+        <div>
+          <label htmlFor={`category-${product.id}`} className="block text-sm font-semibold">Category</label>
+          <select id={`category-${product.id}`} value={categoryId} onChange={e => setCategoryId(e.target.value)}
+            className="mt-1.5 h-12 w-full rounded-xl border border-stone-400 bg-white px-3 text-[15px]">
+            {categories.status !== 'success' && <option value={product.categoryId}>{product.categoryName}</option>}
+            {categories.status === 'success' && categories.data.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor={`photo-${product.id}`} className="block text-sm font-semibold">Photo</label>
+          <div className="mt-1.5 flex items-center gap-3">
+            <img src={`${image}-480.webp`} alt="" className="h-16 w-13 shrink-0 rounded-lg bg-linen object-cover" />
+            <select id={`photo-${product.id}`} value={image} onChange={e => setImage(e.target.value)}
+              className="h-12 w-full rounded-xl border border-stone-400 bg-white px-3 text-[15px]">
+              {image === PLACEHOLDER_IMAGE && <option value={PLACEHOLDER_IMAGE}>Placeholder</option>}
+              {photos.map(([path, name]) => <option key={path} value={path}>{path === product.imageUrl ? 'Current photo' : `Same photo as ${name}`}</option>)}
+            </select>
+          </div>
+          <p className="mt-1.5 text-[13px] text-stone-600">Uploading new photos is not available yet; choose a photo already in the store.</p>
+        </div>
         <div>
           <label htmlFor={`description-${product.id}`} className="block text-sm font-semibold">Description</label>
           <textarea id={`description-${product.id}`} rows={4} maxLength={4000} value={description} onChange={e => setDescription(e.target.value)}

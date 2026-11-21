@@ -103,7 +103,7 @@ test('E2E-18 administrator ships and delivers an order, cancels another with sto
   check(ordersMade.length === 2, 'FIXTURE_COUNT');
 });
 
-test('E2E-19 administrator creates a product that appears in the store, and a duplicate address is refused', async ({ page }) => {
+test('E2E-19 administrator creates a product, moves it to another category with another photo, reads its history, and a duplicate address is refused', async ({ page }) => {
   await adminLogin(page);
   const slug = `e2e-runner-${Date.now()}`;
 
@@ -143,6 +143,32 @@ test('E2E-19 administrator creates a product that appears in the store, and a du
     await page.getByRole('heading', { level: 1, name: 'Linen Table Runner' }).waitFor();
     check(await page.getByText('$34.50').first().isVisible(), 'NEW_PRODUCT_PRICE');
     check(await page.getByRole('button', { name: /Add to cart/ }).isVisible(), 'NEW_PRODUCT_BUYABLE');
+  });
+
+  await test.step('category and photo are edited and the product appears in the new category', async () => {
+    await page.goto('/admin/products');
+    await page.getByLabel('Find a product').fill('Linen Table Runner');
+    await page.getByRole('button', { name: 'Edit details of Linen Table Runner' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Edit Linen Table Runner' });
+    await dialog.getByLabel('Category').selectOption({ label: 'Lighting' });
+    await dialog.getByLabel('Photo').selectOption({ label: 'Same photo as Dome Floor Lamp, Graphite' });
+    const saved = page.waitForResponse(r => new URL(r.url()).pathname.startsWith('/api/v1/admin/products/') && r.request().method() === 'PATCH');
+    await dialog.getByRole('button', { name: 'Save product' }).click();
+    check((await saved).status() === 200, 'EDIT_STATUS');
+    await page.getByText('Product saved').waitFor();
+    await page.goto(`/products/${slug}`);
+    await page.getByRole('heading', { level: 1, name: 'Linen Table Runner' }).waitFor();
+    check(await page.getByRole('navigation', { name: 'Breadcrumb' }).getByText('Lighting').isVisible(), 'NEW_CATEGORY_SHOWN');
+  });
+
+  await test.step('product history lists the creation and the edit', async () => {
+    await page.goto('/admin/products');
+    await page.getByLabel('Find a product').fill('Linen Table Runner');
+    await page.getByRole('button', { name: 'History of Linen Table Runner' }).click();
+    const dialog = page.getByRole('dialog', { name: 'History of Linen Table Runner' });
+    await dialog.getByText('Created', { exact: true }).waitFor();
+    check(await dialog.getByText('Category changed').isVisible() && await dialog.getByText('Photo changed').isVisible(), 'HISTORY_EDIT');
+    await dialog.getByRole('button', { name: 'Close' }).click();
   });
 
   await test.step('duplicate address is refused and nothing is created', async () => {
