@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import type { Order } from '@/features/commerce/types';
 import { Link } from 'react-router-dom';
 import { ChevronRightIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +11,7 @@ import { formatMoney } from '@/lib/money';
 import { useAsync } from '@/lib/useAsync';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 
+const PAGE = 50;
 const STATUSES: Array<[OrderStatus | '', string]> = [['', 'All statuses'], ['CONFIRMED', 'Confirmed'], ['SHIPPED', 'Shipped'], ['DELIVERED', 'Delivered'], ['CANCELLED', 'Cancelled']];
 
 export default function AdminOrdersPage() {
@@ -17,7 +19,24 @@ export default function AdminOrdersPage() {
   const [status, setStatus] = useState<OrderStatus | ''>('');
   const [draft, setDraft] = useState('');
   const [q, setQ] = useState('');
-  const orders = useAsync(() => adminApi.orders({ status: status || undefined, q: q || undefined }), `${status}|${q}`);
+  const orders = useAsync(() => adminApi.orders({ status: status || undefined, q: q || undefined, limit: PAGE }), `${status}|${q}`);
+  // Further pages are appended below the first; a new search starts again from the first page.
+  const [more, setMore] = useState<{ key: string; items: Order[]; last: number }>({ key: '', items: [], last: PAGE });
+  const key = `${status}|${q}`;
+  const extra = more.key === key ? more.items : [];
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
+  const shown = orders.status === 'success' ? [...orders.data, ...extra] : [];
+  const hasMore = orders.status === 'success' && (more.key === key ? more.last : orders.data.length) >= PAGE;
+  const loadMore = async () => {
+    if (loadingMore || orders.status !== 'success') return;
+    setLoadingMore(true); setMoreFailed(false);
+    try {
+      const next = await adminApi.orders({ status: status || undefined, q: q || undefined, limit: PAGE, offset: shown.length });
+      setMore({ key, items: [...extra, ...next], last: next.length });
+    } catch { setMoreFailed(true); }
+    finally { setLoadingMore(false); }
+  };
   const submit = (event: FormEvent) => { event.preventDefault(); setQ(draft.trim()); };
   return (
     <section aria-labelledby="orders-heading">
@@ -42,11 +61,11 @@ export default function AdminOrdersPage() {
         {orders.status === 'loading' && <div className="grid gap-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-20" />)}</div>}
         {orders.status === 'error' && <LoadError onRetry={orders.retry}>We could not load orders.</LoadError>}
         {orders.status === 'success' && orders.data.length === 0 && <EmptyState title="No orders found" description="Try another status or search term." />}
-        {orders.status === 'success' && orders.data.length > 0 && (
+        {orders.status === 'success' && shown.length > 0 && (
           <>
-            <p className="mb-3 text-sm text-stone-600" role="status">{orders.data.length} {orders.data.length === 1 ? 'order' : 'orders'}, newest first</p>
+            <p className="mb-3 text-sm text-stone-600" role="status">{shown.length} {shown.length === 1 ? 'order' : 'orders'}{hasMore ? ' shown' : ''}, newest first</p>
             <ul className="grid grid-cols-1 gap-3">
-              {orders.data.map(order => (
+              {shown.map(order => (
                 <li key={order.id}>
                   <Link to={`/admin/orders/${order.id}`} className="flex items-center gap-4 rounded-(--radius-card) border border-stone-200 p-4 hover:border-stone-900">
                     <span className="min-w-0 flex-1">
@@ -64,6 +83,8 @@ export default function AdminOrdersPage() {
                 </li>
               ))}
             </ul>
+            {moreFailed && <p role="alert" className="mt-3 text-sm text-red-800">We could not load more orders. Please try again.</p>}
+            {hasMore && <Button variant="secondary" className="mt-4" loading={loadingMore} loadingLabel="Loading…" onClick={loadMore}>Show more orders</Button>}
           </>
         )}
       </div>

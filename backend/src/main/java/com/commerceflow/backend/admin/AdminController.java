@@ -36,8 +36,8 @@ public class AdminController {
 
     @GetMapping("/orders")
     public List<Order> orders(@RequestParam(required = false) String status, @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "100") int limit) {
-        return orders.list(status(status), search(q), limit(limit));
+            @RequestParam(defaultValue = "100") int limit, @RequestParam(defaultValue = "0") int offset) {
+        return orders.list(status(status), search(q), limit(limit), offset(offset));
     }
 
     @GetMapping("/orders/{orderId}")
@@ -60,6 +60,11 @@ public class AdminController {
     @ResponseStatus(HttpStatus.CREATED)
     public AdminProduct create(@AuthenticationPrincipal AuthPrincipal admin, @Valid @RequestBody ProductCreateRequest request) {
         return products.create(admin.id(), request);
+    }
+
+    @GetMapping("/products/{productId}/history")
+    public List<AdminModels.AuditEntry> productHistory(@PathVariable UUID productId) {
+        return products.history(productId);
     }
 
     @PatchMapping("/products/{productId}")
@@ -87,6 +92,11 @@ public class AdminController {
         if (value == null || value.isBlank()) return null;
         if (value.strip().length() > 120) throw new AdminException.InvalidRequest();
         return value.strip();
+    }
+
+    private static int offset(int value) {
+        if (value < 0 || value > 100_000) throw new AdminException.InvalidRequest();
+        return value;
     }
 
     private static int limit(int value) {

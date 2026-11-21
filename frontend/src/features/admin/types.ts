@@ -36,6 +36,9 @@ export interface ProductChanges {
   description?: string;
   price?: Money;
   active?: boolean;
+  categoryId?: string;
+  /** A library photo such as `/images/products/stoneware-mug`. */
+  imagePath?: string;
 }
 
 export interface NewProduct {

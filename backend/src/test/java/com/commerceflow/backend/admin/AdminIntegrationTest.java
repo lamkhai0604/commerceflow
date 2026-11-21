@@ -114,7 +114,10 @@ class AdminIntegrationTest {
         jdbc.update("""
                 UPDATE commerceflow.products SET stock_quantity = 25, active = true,
                     price = CASE WHEN id = ?::uuid THEN 18.00 ELSE price END,
-                    name = CASE WHEN id = ?::uuid THEN 'Stoneware Mug' ELSE name END""", MUG, MUG);
+                    name = CASE WHEN id = ?::uuid THEN 'Stoneware Mug' ELSE name END,
+                    category_id = CASE WHEN id = ?::uuid THEN 'a97a7ff4-29e1-597a-a5fa-3430e170fdcb'::uuid ELSE category_id END,
+                    image_path = CASE WHEN id = ?::uuid THEN '/images/products/stoneware-mug' ELSE image_path END,
+                    image_alt = CASE WHEN id = ?::uuid THEN 'White stoneware mug on a white table' ELSE image_alt END""", MUG, MUG, MUG, MUG, MUG);
     }
 
     @Test
@@ -424,6 +427,68 @@ class AdminIntegrationTest {
         assertThat(profile.has("password")).isFalse();
         var admin = account(true);
         assertThat(json(admin.get("/account/profile")).get("roles")).hasSize(2);
+    }
+
+    @Test
+    void administratorsMoveAProductToAnotherCategoryAndChangeItsPhoto() throws Exception { // FR-14, S7-D01
+        var admin = account(true);
+        var changed = admin.patch("/admin/products/" + MUG, Map.of("categoryId", DECOR, "imagePath", "/images/products/stoneware-vase-cream"));
+        assertThat(changed.statusCode()).as(changed.body()).isEqualTo(200);
+        assertThat(json(changed).get("categoryName").asText()).isEqualTo("Decor");
+        assertThat(json(changed).get("imageUrl").asText()).isEqualTo("/images/products/stoneware-vase-cream");
+
+        var shop = json(new Browser().csrf().get("/products/" + MUG));
+        assertThat(shop.get("categoryId").asText()).isEqualTo(DECOR);
+        assertThat(shop.get("imageUrl").asText()).isEqualTo("/images/products/stoneware-vase-cream");
+        assertThat(shop.get("imageAlt").asText()).isEqualTo("Cream stoneware vase on a marble plinth"); // the photo's own description
+
+        assertThat(admin.patch("/admin/products/" + MUG, Map.of("categoryId", UUID.randomUUID().toString())).statusCode()).isEqualTo(400);
+        assertThat(admin.patch("/admin/products/" + MUG, Map.of("imagePath", "https://evil.example/x.png")).statusCode()).isEqualTo(400);
+        assertThat(admin.patch("/admin/products/" + MUG, Map.of("imagePath", "/images/products/../x")).statusCode()).isEqualTo(400);
+        // Repeating the same values changes nothing and leaves no new audit entry.
+        long entries = jdbc.queryForObject("SELECT count(*) FROM commerceflow.admin_audit_log WHERE entity_id = ?::uuid", Long.class, MUG);
+        assertThat(admin.patch("/admin/products/" + MUG, Map.of("categoryId", DECOR)).statusCode()).isEqualTo(200);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM commerceflow.admin_audit_log WHERE entity_id = ?::uuid", Long.class, MUG)).isEqualTo(entries);
+        assertThat(entries).isEqualTo(1);
+    }
+
+    @Test
+    void productHistoryListsEveryAdministrativeChangeOldestFirstAndIsAdministratorOnly() throws Exception {
+        var admin = account(true);
+        var created = json(admin.post("/admin/products", newProduct("history-" + UUID.randomUUID().toString().substring(0, 8))));
+        String id = created.get("id").asText();
+        assertThat(admin.patch("/admin/products/" + id, Map.of("price", "40.00")).statusCode()).isEqualTo(200);
+        assertThat(admin.patch("/admin/products/" + id + "/inventory", Map.of("stockQuantity", 7)).statusCode()).isEqualTo(200);
+
+        var history = json(admin.get("/admin/products/" + id + "/history"));
+        assertThat(history).hasSize(3);
+        assertThat(List.of(history.get(0).get("action").asText(), history.get(1).get("action").asText(), history.get(2).get("action").asText()))
+                .containsExactly("PRODUCT_CREATED", "PRODUCT_UPDATED", "STOCK_SET");
+        assertThat(history.get(0).get("actorEmail").asText()).isEqualTo(admin.email);
+        assertThat(history.get(1).get("details").get("price").get("to").asText()).isEqualTo("40.00");
+        assertThat(history.get(2).get("details").get("to").asInt()).isEqualTo(7);
+
+        assertThat(admin.get("/admin/products/" + UUID.randomUUID() + "/history").statusCode()).isEqualTo(404);
+        assertThat(account(false).get("/admin/products/" + id + "/history").statusCode()).isEqualTo(403);
+        assertThat(new Browser().csrf().get("/admin/products/" + id + "/history").statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void theOrderListPagesWithoutRepeatsOrGaps() throws Exception { // B-14
+        var admin = account(true);
+        for (int i = 0; i < 3; i++) buy(MUG, 1);
+        var full = ids(json(admin.get("/admin/orders?limit=200")));
+        assertThat(full.size()).isGreaterThanOrEqualTo(3);
+        var firstPage = ids(json(admin.get("/admin/orders?limit=2&offset=0")));
+        var secondPage = ids(json(admin.get("/admin/orders?limit=2&offset=2")));
+        assertThat(firstPage).hasSize(2);
+        assertThat(secondPage).hasSizeGreaterThanOrEqualTo(1);
+        var joined = new ArrayList<>(firstPage);
+        joined.addAll(secondPage);
+        assertThat(joined).isEqualTo(full.subList(0, joined.size()));
+        assertThat(json(admin.get("/admin/orders?limit=2&offset=100000")).size()).isZero();
+        assertThat(admin.get("/admin/orders?offset=-1").statusCode()).isEqualTo(400);
+        assertThat(admin.get("/admin/orders?offset=100001").statusCode()).isEqualTo(400);
     }
 
     List<String> ids(JsonNode orders) {

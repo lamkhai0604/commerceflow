@@ -6,7 +6,7 @@ import { renderApp } from '@/test/renderApp';
 
 vi.mock('@/features/catalog/catalogApi', () => import('@/test/fakeCatalogApi'));
 vi.mock('@/features/admin/adminApi', () => ({
-  default: { clearCsrf: vi.fn(), orders: vi.fn(), order: vi.fn(), changeStatus: vi.fn(), products: vi.fn(), updateProduct: vi.fn(), setStock: vi.fn(), createProduct: vi.fn() },
+  default: { clearCsrf: vi.fn(), orders: vi.fn(), order: vi.fn(), changeStatus: vi.fn(), products: vi.fn(), updateProduct: vi.fn(), setStock: vi.fn(), createProduct: vi.fn(), productHistory: vi.fn() },
 }));
 vi.mock('@/features/commerce/commerceApi', () => ({ default: { clearCsrf: vi.fn(), cart: vi.fn(), orders: vi.fn(), order: vi.fn() } }));
 
@@ -18,7 +18,7 @@ const customer = { isLoggedIn: true, currentUser: member };
 
 const adminOrder = (overrides: Partial<AdminOrder['order']> = {}, history: AdminOrder['history'] = []): AdminOrder => ({ order: order({ guest: false, ...overrides }), history });
 const product = (overrides: Partial<AdminProduct> = {}): AdminProduct => ({
-  id: 'p1', name: 'Stoneware Mug', slug: 'stoneware-mug', description: 'A mug.', categoryId: 'c1', categoryName: 'Kitchen & Dining',
+  id: 'p1', name: 'Stoneware Mug', slug: 'stoneware-mug', description: 'A mug.', categoryId: 'a97a7ff4-29e1-597a-a5fa-3430e170fdcb', categoryName: 'Kitchen & Dining',
   price: '18.00', currency: 'USD', stockQuantity: 25, active: true, imageUrl: '/images/products/stoneware-mug', ...overrides,
 });
 
@@ -48,13 +48,13 @@ test('orders: lists newest first, filters by status and searches by number or em
   expect(link).toHaveAttribute('href', '/admin/orders/7c9e6679-7425-40de-944b-e07fc1f90ae7');
   expect(screen.getByRole('link', { name: /CF-AAAA2222/ })).toHaveTextContent('Guest');
   expect(screen.getByRole('status')).toHaveTextContent('2 orders, newest first');
-  expect(api.orders).toHaveBeenLastCalledWith({ status: undefined, q: undefined });
+  expect(api.orders).toHaveBeenLastCalledWith({ status: undefined, q: undefined, limit: 50 });
 
   fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'SHIPPED' } });
-  await waitFor(() => expect(api.orders).toHaveBeenLastCalledWith({ status: 'SHIPPED', q: undefined }));
+  await waitFor(() => expect(api.orders).toHaveBeenLastCalledWith({ status: 'SHIPPED', q: undefined, limit: 50 }));
   fireEvent.change(screen.getByLabelText('Order number or email'), { target: { value: ' jane ' } });
   fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-  await waitFor(() => expect(api.orders).toHaveBeenLastCalledWith({ status: 'SHIPPED', q: 'jane' }));
+  await waitFor(() => expect(api.orders).toHaveBeenLastCalledWith({ status: 'SHIPPED', q: 'jane', limit: 50 }));
 });
 
 test('order: a confirmed order can be shipped, then delivered, and the history shows who did it', async () => {
@@ -238,4 +238,69 @@ test('account page shows the signed-in details, marks administrators and is clos
   expect(screen.getByText('boss@example.com')).toBeInTheDocument();
   expect(screen.getByText('Administrator')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Administration' })).toHaveAttribute('href', '/admin');
+});
+
+test('orders: a full page offers more, appends the next page and stops when the last one is short', async () => {
+  const page = (from: number, count: number) => Array.from({ length: count }, (_, i) => order({ id: `o-${from + i}`, orderNumber: `CF-${String(10000000 + from + i)}`, guest: false }));
+  api.orders.mockResolvedValueOnce(page(0, 50));
+  renderApp('/admin/orders', {}, admin);
+  expect(await screen.findByRole('status')).toHaveTextContent('50 orders shown, newest first');
+  api.orders.mockResolvedValueOnce(page(50, 3));
+  fireEvent.click(screen.getByRole('button', { name: 'Show more orders' }));
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('53 orders, newest first'));
+  expect(api.orders).toHaveBeenLastCalledWith({ status: undefined, q: undefined, limit: 50, offset: 50 });
+  expect(screen.getByRole('link', { name: /CF-10000052/ })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Show more orders' })).not.toBeInTheDocument();
+});
+
+test('orders: a failed "show more" says so and keeps the orders already shown', async () => {
+  api.orders.mockResolvedValueOnce(Array.from({ length: 50 }, (_, i) => order({ id: `o-${i}`, orderNumber: `CF-${String(20000000 + i)}`, guest: false })));
+  renderApp('/admin/orders', {}, admin);
+  await screen.findByText('50 orders shown, newest first');
+  api.orders.mockRejectedValueOnce({ status: 500 });
+  fireEvent.click(screen.getByRole('button', { name: 'Show more orders' }));
+  expect(await screen.findByText(/could not load more orders/)).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('50 orders shown');
+});
+
+test('products: editing sends a new category and photo, and only what changed', async () => {
+  api.products.mockResolvedValue([product(), product({ id: 'p2', name: 'Oak Nightstand', imageUrl: '/images/products/oak-nightstand' })]);
+  api.updateProduct.mockResolvedValueOnce(product({ categoryName: 'Decor', imageUrl: '/images/products/oak-nightstand' }));
+  renderApp('/admin/products', {}, admin);
+  await screen.findByText('Oak Nightstand');
+  fireEvent.click(screen.getByRole('button', { name: 'Edit details of Stoneware Mug' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Edit Stoneware Mug' });
+  await waitFor(() => expect(within(dialog).getByRole('option', { name: 'Decor' })).toBeInTheDocument());
+  expect(within(dialog).getByRole('option', { name: 'Current photo' })).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Save product' }));
+  expect(api.updateProduct).not.toHaveBeenCalled(); // nothing changed: the dialog just closes
+  fireEvent.click(screen.getByRole('button', { name: 'Edit details of Stoneware Mug' }));
+  const again = await screen.findByRole('dialog', { name: 'Edit Stoneware Mug' });
+  await waitFor(() => expect(within(again).getByRole('option', { name: 'Decor' })).toBeInTheDocument());
+  const decor = within(again).getByRole('option', { name: 'Decor' }).getAttribute('value');
+  fireEvent.change(within(again).getByLabelText('Category'), { target: { value: decor } });
+  fireEvent.change(within(again).getByLabelText('Photo'), { target: { value: '/images/products/oak-nightstand' } });
+  fireEvent.click(within(again).getByRole('button', { name: 'Save product' }));
+  await waitFor(() => expect(api.updateProduct).toHaveBeenCalledWith('p1', { categoryId: decor, imagePath: '/images/products/oak-nightstand' }));
+});
+
+test('products: the history dialog lists the administrative changes in words', async () => {
+  api.products.mockResolvedValue([product()]);
+  api.productHistory.mockResolvedValueOnce([
+    { id: 'h1', actorEmail: 'boss@example.com', action: 'PRODUCT_CREATED', reason: null, details: { name: 'Stoneware Mug', price: '18.00', stock: 25 }, createdAt: '2026-11-09T10:00:00Z' },
+    { id: 'h2', actorEmail: 'boss@example.com', action: 'PRODUCT_UPDATED', reason: null, details: { price: { from: '18.00', to: '20.50' }, category: { from: 'x', to: 'y' }, image: { from: 'a', to: 'b' }, active: { from: true, to: false } }, createdAt: '2026-11-09T11:00:00Z' },
+    { id: 'h3', actorEmail: 'boss@example.com', action: 'STOCK_SET', reason: null, details: { from: 25, to: 40 }, createdAt: '2026-11-09T12:00:00Z' },
+  ]);
+  renderApp('/admin/products', {}, admin);
+  await screen.findByText('Stoneware Mug');
+  fireEvent.click(screen.getByRole('button', { name: 'History of Stoneware Mug' }));
+  const dialog = await screen.findByRole('dialog', { name: 'History of Stoneware Mug' });
+  expect(await within(dialog).findByText('Created')).toBeInTheDocument();
+  expect(within(dialog).getByText('Stoneware Mug, $18.00, 25 in stock')).toBeInTheDocument();
+  expect(within(dialog).getByText('Price: $18.00 → $20.50')).toBeInTheDocument();
+  expect(within(dialog).getByText('Category changed')).toBeInTheDocument();
+  expect(within(dialog).getByText('Photo changed')).toBeInTheDocument();
+  expect(within(dialog).getByText('Hidden from the store')).toBeInTheDocument();
+  expect(within(dialog).getByText('Stock 25 → 40')).toBeInTheDocument();
+  expect(dialog.textContent).not.toMatch(/\bx\b|images\/products/); // ids and paths are never shown
 });
