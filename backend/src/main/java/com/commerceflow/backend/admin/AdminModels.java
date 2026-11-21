@@ -28,13 +28,14 @@ public final class AdminModels {
         }
     }
 
-    /** At least one field must be present. Category, slug and image are not editable. */
+    /** At least one field must be present. The slug is not editable (it is the product's address); category and library photo are (S7-D01). */
     public record ProductPatchRequest(@Size(min = 1, max = 200) String name, @Size(max = 4000) String description,
-            @DecimalMin("0.01") @DecimalMax("99999.99") @Digits(integer = 5, fraction = 2) BigDecimal price, Boolean active) {
+            @DecimalMin("0.01") @DecimalMax("99999.99") @Digits(integer = 5, fraction = 2) BigDecimal price, Boolean active,
+            UUID categoryId, @Pattern(regexp = "^/images/products/[a-z0-9-]+$") @Size(max = 200) String imagePath) {
         public ProductPatchRequest {
             name = name == null ? null : name.strip();
         }
-        boolean empty() { return name == null && description == null && price == null && active == null; }
+        boolean empty() { return name == null && description == null && price == null && active == null && categoryId == null && imagePath == null; }
     }
 
     /** Baseline `ProductWriteRequest` plus an optional library image (S6-D01). New products are active unless said otherwise. */

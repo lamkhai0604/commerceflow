@@ -1,6 +1,7 @@
 package com.commerceflow.backend.admin;
 
 import com.commerceflow.backend.admin.AdminModels.AdminProduct;
+import com.commerceflow.backend.admin.AdminModels.AuditEntry;
 import com.commerceflow.backend.admin.AdminModels.InventoryRequest;
 import com.commerceflow.backend.admin.AdminModels.ProductCreateRequest;
 import com.commerceflow.backend.admin.AdminModels.ProductPatchRequest;
@@ -76,9 +77,9 @@ public class AdminProductService {
     @Transactional
     public AdminProduct patch(UUID actor, UUID productId, ProductPatchRequest request) {
         if (request.empty()) throw new AdminException.InvalidRequest();
-        var before = jdbc.sql("SELECT name, description, price, active FROM commerceflow.products WHERE id = :id FOR UPDATE")
+        var before = jdbc.sql("SELECT name, description, price, active, category_id, image_path FROM commerceflow.products WHERE id = :id FOR UPDATE")
                 .param("id", productId)
-                .query((rs, row) -> new Object[] {rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getBoolean(4)})
+                .query((rs, row) -> new Object[] {rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getBoolean(4), rs.getObject(5, UUID.class), rs.getString(6)})
                 .optional().orElseThrow(AdminException.NotFound::new);
         var changes = new LinkedHashMap<String, Object>();
         if (request.name() != null && !request.name().equals(before[0])) changes.put("name", Map.of("from", before[0], "to", request.name()));
@@ -87,18 +88,43 @@ public class AdminProductService {
             changes.put("price", Map.of("from", ((BigDecimal) before[2]).toPlainString(), "to", request.price().setScale(2).toPlainString()));
         }
         if (request.active() != null && request.active() != (Boolean) before[3]) changes.put("active", Map.of("from", before[3], "to", request.active()));
+        if (request.categoryId() != null) {
+            boolean exists = jdbc.sql("SELECT count(*) FROM commerceflow.categories WHERE id = :id").param("id", request.categoryId())
+                    .query(Long.class).single() == 1;
+            if (!exists) throw new AdminException.InvalidRequest();
+            if (!request.categoryId().equals(before[4])) changes.put("category", Map.of("from", String.valueOf(before[4]), "to", request.categoryId().toString()));
+        }
+        // A new photo brings the description of that photo with it (taken from a product that already uses it), else the product name.
+        String newAlt = null;
+        if (request.imagePath() != null && !request.imagePath().equals(before[5])) {
+            changes.put("image", Map.of("from", String.valueOf(before[5]), "to", request.imagePath()));
+            newAlt = jdbc.sql("SELECT image_alt FROM commerceflow.products WHERE image_path = :path AND id <> :id ORDER BY display_order LIMIT 1")
+                    .param("path", request.imagePath()).param("id", productId).query(String.class).optional()
+                    .orElse(request.name() != null ? request.name() : (String) before[0]);
+        }
         if (!changes.isEmpty()) {
             jdbc.sql("""
                     UPDATE commerceflow.products
                     SET name = COALESCE(:name, name), description = COALESCE(:description, description),
-                        price = COALESCE(:price, price), active = COALESCE(:active, active), version = version + 1, updated_at = now()
+                        price = COALESCE(:price, price), active = COALESCE(:active, active),
+                        category_id = COALESCE(:category, category_id), image_path = COALESCE(:image, image_path),
+                        image_alt = COALESCE(:alt, image_alt), version = version + 1, updated_at = now()
                     WHERE id = :id""")
                     .param("name", request.name(), java.sql.Types.VARCHAR).param("description", request.description(), java.sql.Types.VARCHAR)
                     .param("price", request.price(), java.sql.Types.NUMERIC).param("active", request.active(), java.sql.Types.BOOLEAN)
-                    .param("id", productId).update();
+                    .param("category", request.categoryId(), java.sql.Types.OTHER).param("image", request.imagePath(), java.sql.Types.VARCHAR)
+                    .param("alt", newAlt, java.sql.Types.VARCHAR).param("id", productId).update();
             audit.record(actor, "PRODUCT_UPDATED", "PRODUCT", productId, null, changes);
         }
         return get(productId);
+    }
+
+    /** Administrative changes to one product, oldest first. */
+    @Transactional(readOnly = true)
+    public List<AuditEntry> history(UUID productId) {
+        boolean exists = jdbc.sql("SELECT count(*) FROM commerceflow.products WHERE id = :id").param("id", productId).query(Long.class).single() == 1;
+        if (!exists) throw new AdminException.NotFound();
+        return audit.history("PRODUCT", productId);
     }
 
     @Transactional

@@ -45,7 +45,7 @@ public class OrderQueries {
     }
 
     /** Administration list: newest first, optionally one status and a search on order number or email. */
-    public List<Order> adminList(String status, String search, int limit) {
+    public List<Order> adminList(String status, String search, int limit, int offset) {
         var sql = new StringBuilder("SELECT " + ORDER_COLUMNS + FROM + " WHERE true");
         var statement = new java.util.HashMap<String, Object>();
         if (status != null) { sql.append(" AND o.order_status = :status"); statement.put("status", status); }
@@ -54,8 +54,9 @@ public class OrderQueries {
             statement.put("number", search.toUpperCase(java.util.Locale.ROOT));
             statement.put("email", "%" + search.toLowerCase(java.util.Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
         }
-        sql.append(" ORDER BY o.created_at DESC, o.id LIMIT :limit");
+        sql.append(" ORDER BY o.created_at DESC, o.id LIMIT :limit OFFSET :offset");
         statement.put("limit", limit);
+        statement.put("offset", offset);
         return jdbc.sql(sql.toString()).params(statement).query(this::order).list();
     }
 
