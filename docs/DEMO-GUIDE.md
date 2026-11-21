@@ -102,6 +102,11 @@ Create the account first and grant the role as described in [Administrator accou
 | 8.19 | Create a product and leave the photo on **Placeholder** | The product page shows a neutral grey placeholder picture |
 | 8.20 | Account menu → **Your account** | Your name, email and an **Administrator** label, with links to order history and administration |
 
+| 8.21 | **Products and stock** → **Edit details** on a product: change the **Category** and the **Photo** and save | The product page shows the new category in its breadcrumb and the new photo; the old category no longer lists it |
+| 8.22 | Open **Edit details** again and save without changing anything | The dialog just closes: nothing is sent and no history entry is added |
+| 8.23 | **History** on the product | Its changes in words (Created, Price, Category changed, Photo changed, Stock), oldest first, with who and when |
+| 8.24 | **Orders**: when there are more than 50 orders | "50 orders shown" and a **Show more orders** button that adds the next orders without repeats |
+
 Stock rule in the store (needs step 8.9 first): add 4 of the product with 3 left and check out. Expect a message naming the product and how many are available, and no order.
 
 ## What is not in this release

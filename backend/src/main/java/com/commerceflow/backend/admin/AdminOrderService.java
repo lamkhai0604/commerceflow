@@ -28,8 +28,8 @@ public class AdminOrderService {
         this.audit = audit;
     }
 
-    public List<Order> list(OrderStatus status, String search, int limit) {
-        return orders.adminList(status == null ? null : status.name(), search, limit);
+    public List<Order> list(OrderStatus status, String search, int limit, int offset) {
+        return orders.adminList(status == null ? null : status.name(), search, limit, offset);
     }
 
     @Transactional(readOnly = true)

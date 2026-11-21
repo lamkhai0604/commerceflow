@@ -1,6 +1,6 @@
 import { createApiClient } from '@/lib/apiClient';
 import type { Order } from '@/features/commerce/types';
-import type { AdminOrder, AdminProduct, NewProduct, OrderStatus, ProductChanges } from './types';
+import type { AdminOrder, AdminProduct, AuditEntry, NewProduct, OrderStatus, ProductChanges } from './types';
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
@@ -9,11 +9,13 @@ export function createAdminApi(client: ApiClient = createApiClient()) {
   const { get, write } = client;
   return {
     clearCsrf: client.clearCsrf,
-    orders: (filter: { status?: OrderStatus; q?: string } = {}) =>
-      get<Order[]>('/admin/orders', { status: filter.status || undefined, q: filter.q || undefined }),
+    /** Newest first; `offset` skips the orders already shown. */
+    orders: (filter: { status?: OrderStatus; q?: string; limit?: number; offset?: number } = {}) =>
+      get<Order[]>('/admin/orders', { status: filter.status || undefined, q: filter.q || undefined, limit: filter.limit, offset: filter.offset || undefined }),
     order: (id: string) => get<AdminOrder>(`/admin/orders/${encodeURIComponent(id)}`),
     changeStatus: (id: string, status: OrderStatus, reason?: string) =>
       write<AdminOrder>({ method: 'PATCH', url: `/admin/orders/${encodeURIComponent(id)}/status`, data: { status, reason: reason || undefined } }).then(r => r.data),
+    productHistory: (id: string) => get<AuditEntry[]>(`/admin/products/${encodeURIComponent(id)}/history`),
     products: () => get<AdminProduct[]>('/admin/products', { limit: 200 }),
     createProduct: (product: NewProduct) => write<AdminProduct>({ method: 'POST', url: '/admin/products', data: product }, 201).then(r => r.data),
     updateProduct: (id: string, changes: ProductChanges) =>
