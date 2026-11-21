@@ -116,7 +116,7 @@ export default function ProductListPage() {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-6">
-                {result.data.items.map(product => <ProductCard key={product.id} product={product} headingLevel="h2"
+                {result.data.items.map((product, index) => <ProductCard key={product.id} product={product} headingLevel="h2" priority={index < 3}
                   sizes="(min-width: 1024px) 22vw, (min-width: 768px) 33vw, 50vw" />)}
               </div>
               <div className="mt-12">

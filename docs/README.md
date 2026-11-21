@@ -4,6 +4,7 @@
 | --- | --- |
 | [Current status](STATUS.md) | Active sprint, revision, blockers and next action |
 | [Demonstration guide](DEMO-GUIDE.md) | Step-by-step trial of every implemented feature on the live site |
+| [Quality audit, November 2026](testing/quality-audit-2026-11.md) | Dependency vulnerabilities and Lighthouse scores, with fixes |
 | [Performance check (NFR-02)](testing/performance-nfr-02.md) | Product listing latency with 1,000 products at 20 concurrent users |
 | [Sprint 5 and 6 product review](reviews/sprint-5-6-product-review.md) | Review of administration, product creation, the account page and security headers, with live verification and backlog |
 | [Sprint 4 product review](reviews/sprint-4-product-review.md) | Design, flow, business-rule and code review of the Sprint 4 release, with fixes and backlog proposals |

@@ -19,7 +19,7 @@ No new Product Owner decision is needed: the work stays inside the approved base
 | S7-T04 | `GET /admin/orders` pages with `offset` | Done |
 | S7-T05 | Console: category and photo in the Edit product dialog, a History dialog per product, "Show more orders" | Done |
 | S7-T06 | Tests: three more integration tests (18 in total, required in CI), component tests, E2E-19 extended | Done; E2E-19 runs in CI |
-| S7-T07 | Release and live verification | Proposed |
+| S7-T07 | Release and live verification | In progress: merged into `develop` (lamkhai0604/commerceflow#45; the merge happened before CI finished, and all three checks then passed on the same commit); release pull request lamkhai0604/commerceflow#46 awaits the Product Owner |
 
 ## Acceptance
 

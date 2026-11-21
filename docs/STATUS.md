@@ -5,8 +5,8 @@ Updated: 2026-11-09
 | Field | Value |
 | --- | --- |
 | Production (`master`) | `46a0b5a`+: Sprint 6 and its review fixes released (`https://khai-shop.vercel.app`) |
-| Integration (`develop`) | `4947be5` |
-| Active sprint | [Sprint 7](sprints/sprint-7.md): administration completeness, branch `feature/sprint-7-admin-completeness` (all tasks implemented, awaiting CI and release) |
+| Integration (`develop`) | `0b292d9` (Sprint 7) plus dependency and Lighthouse fixes (branch `maintenance/dependency-security`) |
+| Active sprint | none; Sprint 7 merged into `develop` and its release pull request awaits the Product Owner; maintenance: dependency security and Lighthouse fixes ([audit](testing/quality-audit-2026-11.md)) |
 
 ## Live system
 
